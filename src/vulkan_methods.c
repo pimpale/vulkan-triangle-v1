@@ -64,31 +64,14 @@ bool layersAvailable(uint32_t enabledLayerCount, const char* const* ppEnabledLay
 	return true;
 }
 
-uint32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit)
-{
-	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
-	VkQueueFamilyProperties* arr = xmalloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, arr);
-	for(int i = 0; i < queueFamilyCount; i++)
-	{
-		if (arr[i].queueCount > 0 && (arr[0].queueFlags & bit)) {
-			free(arr);
-			return true;
-	    }
-	}
-	free(arr);
-	return true;
-
-}
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
-    VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-    VkDebugUtilsMessageTypeFlagsEXT messageType,
-    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
-    void* pUserData) {
+		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+		VkDebugUtilsMessageTypeFlagsEXT messageType,
+		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+		void* pUserData) {
 	fprintf(stderr, "%s\n", pCallbackData->pMessage);
-    return VK_FALSE;
+	return VK_FALSE;
 }
 
 VkInstance createInstance(
@@ -145,7 +128,7 @@ void destroyInstance(VkInstance instance) {
  * Requires the debug utils extension
  */
 VkDebugUtilsMessengerEXT createDebugCallback(VkInstance instance) {
-	VkDebugUtilsMessengerCreateInfoEXT createInfo;
+	VkDebugUtilsMessengerCreateInfoEXT createInfo = {0};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
 	createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
@@ -178,31 +161,34 @@ void destroyDebugCallback(VkInstance instance, VkDebugUtilsMessengerEXT callback
 	}
 }
 
-VkPhysicalDevice getDevice(VkInstance instance) {
+VkPhysicalDevice createPhysicalDevice(VkInstance instance) {
 	uint32_t deviceCount = 0;
-	vkEnumeratePhysicalDevices(NULL, &deviceCount, NULL);
-	if(deviceCount == 0)
+	VkResult res = vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
+	if(res != VK_SUCCESS || deviceCount == 0)
 	{
-		fprintf("no vulkan capable device found, quitting");
+		fprintf(stderr,"no vulkan capable device found, quitting\n");
 		hardExit();
 	}
 	VkPhysicalDevice* arr = criticalMalloc(deviceCount * sizeof(VkPhysicalDevice));
-	vkEnumeratePhysicalDevices(NULL, &deviceCount, arr);
+	vkEnumeratePhysicalDevices(instance, &deviceCount, arr);
 
+	VkPhysicalDeviceProperties deviceProperties;
 	VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
-
 	for(int i = 0; i < deviceCount; i++)
 	{
-		if(getDeviceQueueIndex(arr[i],VK_QUEUE_GRAPHICS_BIT) != -1 && getDeviceQueueIndex(arr[i],VK_QUEUE_COMPUTE_BIT) != -1 )
+		vkGetDeviceProperties(arr[i],&deviceProperties,NULL);
+		printf();
+		int32_t ret = getDeviceQueueIndex(arr[i],VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+		if(ret != -1 )
 		{
 			selectedDevice = arr[i];
-			break;
 		}
 	}
 
 	if(selectedDevice == VK_NULL_HANDLE)
 	{
-		f
+		fprintf(stderr,"no suitable vulkan device found, quitting\n");
+		hardExit();
 	}
 
 	free(arr);
@@ -213,20 +199,58 @@ int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit)
 {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
-	VkQueueFamilyProperties* arr = xmalloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
+	VkQueueFamilyProperties* arr = criticalMalloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, arr);
 	for(int i = 0; i < queueFamilyCount; i++)
 	{
 		if (arr[i].queueCount > 0 && (arr[0].queueFlags & bit)) {
 			free(arr);
 			return i;
-	    }
+		}
 	}
 	free(arr);
 	return -1;
 }
 
-VkDevice createLogicalDevice(VkPhysicalDevice device)
+VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice,
+		uint32_t deviceQueueIndex,
+		uint32_t enabledExtensionCount,
+		const char* const* ppEnabledExtensionNames,
+		uint32_t enabledLayerCount,
+		const char* const* ppEnabledLayerNames)
 {
+	VkPhysicalDeviceFeatures deviceFeatures = {0};
 
+	VkDeviceQueueCreateInfo queueCreateInfo = { 0 };
+	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo.queueFamilyIndex = deviceQueueIndex;
+	queueCreateInfo.queueCount = 1;
+	float queuePriority = 1.0f;
+	queueCreateInfo.pQueuePriorities = &queuePriority;
+
+	VkDeviceCreateInfo createInfo = {0};
+	createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	createInfo.pQueueCreateInfos = &queueCreateInfo;
+	createInfo.queueCreateInfoCount = 1;
+	createInfo.pEnabledFeatures = &deviceFeatures;
+	createInfo.enabledExtensionCount = enabledExtensionCount;
+	createInfo.ppEnabledExtensionNames = ppEnabledExtensionNames;
+	createInfo.enabledLayerCount = enabledLayerCount;
+	createInfo.ppEnabledLayerNames = ppEnabledLayerNames;
+
+	VkDevice device;
+	VkResult res = vkCreateDevice(physicalDevice, &createInfo, NULL, &device);
+	if(res != VK_SUCCESS)
+	{
+		fprintf(stderr, "failed to create device, quitting\n");
+		hardExit();
+	}
+
+	return device;
+}
+
+VkQueue createQueue(VkDevice device, uint32_t deviceQueueIndex) {
+	VkQueue queue;
+	vkGetDeviceQueue(device, deviceQueueIndex, 0, &queue);
+	return queue;
 }

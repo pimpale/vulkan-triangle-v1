@@ -20,4 +20,16 @@ void destroyInstance(VkInstance instance);
 VkDebugUtilsMessengerEXT createDebugCallback(VkInstance instance);
 void destroyDebugCallback(VkInstance instance, VkDebugUtilsMessengerEXT callback);
 
+VkPhysicalDevice createPhysicalDevice(VkInstance instance);
+
+VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice,
+		uint32_t deviceQueueIndex,
+		uint32_t enabledExtensionCount,
+		const char* const* ppEnabledExtensionNames,
+		uint32_t enabledLayerCount,
+		const char* const* ppEnabledLayerNames);
+void destroyDevice(VkDevice device);
+
+int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit);
+
 #endif /* VULKAN_METHODS_H_ */
