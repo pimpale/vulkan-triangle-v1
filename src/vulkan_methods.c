@@ -8,6 +8,8 @@
 #include "memory.h"
 #include "error_handle.h"
 
+#include "vulkan_methods.h"
+
 bool extensionsAvailable(uint32_t enabledExtensionCount, const char* const* ppEnabledExtensionNames)
 {
 	uint32_t extensionCount = 0;
@@ -176,8 +178,8 @@ VkPhysicalDevice createPhysicalDevice(VkInstance instance) {
 	VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
 	for(int i = 0; i < deviceCount; i++)
 	{
-		vkGetDeviceProperties(arr[i],&deviceProperties,NULL);
-		printf();
+		vkGetPhysicalDeviceProperties(arr[i], &deviceProperties);
+		puts(deviceProperties.deviceName);
 		int32_t ret = getDeviceQueueIndex(arr[i],VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 		if(ret != -1 )
 		{
@@ -195,6 +197,10 @@ VkPhysicalDevice createPhysicalDevice(VkInstance instance) {
 	return selectedDevice;
 }
 
+void destroyDevice(VkDevice device)
+{
+	vkDestroyDevice(device, NULL);
+}
 int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit)
 {
 	uint32_t queueFamilyCount = 0;

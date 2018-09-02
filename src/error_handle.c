@@ -12,6 +12,7 @@
 #include <vulkan/vulkan.h>
 
 #include "constants.h"
+
 #include "error_handle.h"
 
 void printVulkanError(VkResult error)

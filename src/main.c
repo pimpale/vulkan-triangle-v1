@@ -27,7 +27,11 @@ int main(void) {
 	}
 	VkDevice device = createLogicalDevice(physicalDevice,(uint32_t)index, 0, NULL, layerCount, layerNames);
 	puts("created logical device");
+	VkQueue graphicsQueue = createQueue(device, index);
 
+
+	puts("cleaning up");
+	destroyDevice(device);
 	destroyDebugCallback(instance,callback);
 	destroyInstance(instance);
 	puts("done");

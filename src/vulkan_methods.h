@@ -28,8 +28,11 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice,
 		const char* const* ppEnabledExtensionNames,
 		uint32_t enabledLayerCount,
 		const char* const* ppEnabledLayerNames);
+
 void destroyDevice(VkDevice device);
 
 int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit);
+
+VkQueue createQueue(VkDevice device, uint32_t deviceQueueIndex);
 
 #endif /* VULKAN_METHODS_H_ */
