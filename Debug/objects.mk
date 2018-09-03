@@ -4,5 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lvulkan
+LIBS := -lvulkan -lglfw
 

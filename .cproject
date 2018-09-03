@@ -5,46 +5,48 @@
 			<storageModule buildSystemId="org.eclipse.cdt.managedbuilder.core.configurationDataProvider" id="cdt.managedbuild.config.gnu.exe.debug.1327061439" moduleId="org.eclipse.cdt.core.settings" name="Debug">
 				<externalSettings/>
 				<extensions>
-					<extension id="org.eclipse.cdt.core.GNU_ELF" point="org.eclipse.cdt.core.BinaryParser"/>
+					<extension id="org.eclipse.cdt.core.ELF" point="org.eclipse.cdt.core.BinaryParser"/>
 					<extension id="org.eclipse.cdt.core.GASErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.GmakeErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GLDErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
-					<extension id="org.eclipse.cdt.core.CWDLocator" point="org.eclipse.cdt.core.ErrorParser"/>
 					<extension id="org.eclipse.cdt.core.GCCErrorParser" point="org.eclipse.cdt.core.ErrorParser"/>
 				</extensions>
 			</storageModule>
 			<storageModule moduleId="cdtBuildSystem" version="4.0.0">
 				<configuration artifactName="${ProjName}" buildArtefactType="org.eclipse.cdt.build.core.buildArtefactType.exe" buildProperties="org.eclipse.cdt.build.core.buildArtefactType=org.eclipse.cdt.build.core.buildArtefactType.exe,org.eclipse.cdt.build.core.buildType=org.eclipse.cdt.build.core.buildType.debug" cleanCommand="rm -rf" description="" id="cdt.managedbuild.config.gnu.exe.debug.1327061439" name="Debug" parent="cdt.managedbuild.config.gnu.exe.debug">
 					<folderInfo id="cdt.managedbuild.config.gnu.exe.debug.1327061439." name="/" resourcePath="">
-						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.debug.1050057542" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.debug">
-							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.debug.1564356322" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.debug"/>
-							<builder buildPath="${workspace_loc:/Vulkan Rotating Cube}/Debug" id="cdt.managedbuild.target.gnu.builder.exe.debug.461240991" keepEnvironmentInBuildfile="false" managedBuildOn="true" name="Gnu Make Builder" superClass="cdt.managedbuild.target.gnu.builder.exe.debug"/>
-							<tool id="cdt.managedbuild.tool.gnu.archiver.base.236152215" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base"/>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1632708274" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug">
-								<option id="gnu.cpp.compiler.exe.debug.option.optimization.level.1953723643" name="Optimization Level" superClass="gnu.cpp.compiler.exe.debug.option.optimization.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.optimization.level.none" valueType="enumerated"/>
-								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.489027146" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
-							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.debug.36925619" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.debug">
-								<option defaultValue="gnu.c.optimization.level.none" id="gnu.c.compiler.exe.debug.option.optimization.level.1292874638" name="Optimization Level" superClass="gnu.c.compiler.exe.debug.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
-								<option id="gnu.c.compiler.exe.debug.option.debugging.level.301539938" name="Debug Level" superClass="gnu.c.compiler.exe.debug.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
-								<option id="gnu.c.compiler.option.dialect.std.2147272575" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.c11" valueType="enumerated"/>
-								<option id="gnu.c.compiler.option.include.paths.1541290403" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+						<toolChain id="cdt.managedbuild.toolchain.llvm.clang.linux.base.1476018401" name="LLVM with Clang (Linux)" superClass="cdt.managedbuild.toolchain.llvm.clang.linux.base">
+							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.llvm.platform.base.176979635" isAbstract="true" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.llvm.platform.base"/>
+							<builder buildPath="${workspace_loc:/Vulkan Rotating Cube}/Debug" id="cdt.managedbuild.target.llvm.builder.base.1927049906" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" parallelBuildOn="true" parallelizationNumber="optimal" stopOnErr="false" superClass="cdt.managedbuild.target.llvm.builder.base"/>
+							<tool id="cdt.managedbuild.tool.llvm.assembler.base.1311601817" name="LLVM assembler" superClass="cdt.managedbuild.tool.llvm.assembler.base"/>
+							<tool id="cdt.managedbuild.tool.llvm.archiver.base.539576699" name="LLVM archiver" superClass="cdt.managedbuild.tool.llvm.archiver.base"/>
+							<tool id="cdt.managedbuild.tool.llvm.c.compiler.base.1734589840" name="LLVM Clang" superClass="cdt.managedbuild.tool.llvm.c.compiler.base">
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="llvm.c_cpp.compiler.option.include.paths.22443479" name="Include paths (-I)" superClass="llvm.c_cpp.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include/vulkan"/>
+									<listOptionValue builtIn="false" value="/usr/include/GLFW"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.525545700" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+								<option id="llvm.c_cpp.compiler.option.optimization.level.94433600" name="Optimization Level" superClass="llvm.c_cpp.compiler.option.optimization.level" useByScannerDiscovery="false" value="llvm.c_cpp.compiler.optimization.level.none" valueType="enumerated"/>
+								<option id="llvm.c_cpp.compiler.option.debugging.level.1262096187" name="Debug Level" superClass="llvm.c_cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="llvm.c_cpp.compiler.debugging.level.max" valueType="enumerated"/>
+								<option id="cdt.managedbuild.tool.llvm.c.compiler.option.dialect.std.1641971574" name="Language standard" superClass="cdt.managedbuild.tool.llvm.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.default" valueType="enumerated"/>
+								<inputType id="cdt.managedbuild.tool.llvm.c.compiler.input.638225525" superClass="cdt.managedbuild.tool.llvm.c.compiler.input"/>
 							</tool>
-							<tool command="gcc" id="cdt.managedbuild.tool.gnu.c.linker.exe.debug.1363802554" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.debug">
-								<option id="gnu.c.link.option.libs.1468354283" name="Libraries (-l)" superClass="gnu.c.link.option.libs" useByScannerDiscovery="false" valueType="libs">
+							<tool id="cdt.managedbuild.tool.llvm.cpp.compiler.base.266561598" name="LLVM Clang++" superClass="cdt.managedbuild.tool.llvm.cpp.compiler.base">
+								<option id="llvm.c_cpp.compiler.option.optimization.level.2060057041" name="Optimization Level" superClass="llvm.c_cpp.compiler.option.optimization.level" useByScannerDiscovery="false" value="llvm.c_cpp.compiler.optimization.level.none" valueType="enumerated"/>
+								<option id="llvm.c_cpp.compiler.option.debugging.level.1426135844" name="Debug Level" superClass="llvm.c_cpp.compiler.option.debugging.level" useByScannerDiscovery="false" value="llvm.c_cpp.compiler.debugging.level.max" valueType="enumerated"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.llvm.c.linker.base.1838364653" name="LLVM Clang C linker" superClass="cdt.managedbuild.tool.llvm.c.linker.base">
+								<option defaultValue="false" id="llvm.c.link.option.nativeCBackEnd.1334213061" name="Create native binary (with C backend code generator)" superClass="llvm.c.link.option.nativeCBackEnd" valueType="boolean"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="llvm.c.link.option.libs.1286280771" name="Libraries (-l)" superClass="llvm.c.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="vulkan"/>
+									<listOptionValue builtIn="false" value="glfw"/>
+									<listOptionValue builtIn="false" value="stdc++"/>
 								</option>
-								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.749996125" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
+								<inputType id="cdt.managedbuild.tool.llvm.c.linker.input.1011932980" superClass="cdt.managedbuild.tool.llvm.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
 								</inputType>
 							</tool>
-							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.2058011382" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug"/>
-							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.debug.802458385" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.debug">
-								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1850859133" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							<tool id="cdt.managedbuild.tool.llvm.cpp.linker.base.1708612985" name="LLVM Clang C++ linker" superClass="cdt.managedbuild.tool.llvm.cpp.linker.base">
+								<option defaultValue="false" id="llvm.c.link.option.nativeCBackEnd.103110351" name="Create native binary (with C backend code generator)" superClass="llvm.c.link.option.nativeCBackEnd" valueType="boolean"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -79,11 +81,21 @@
 								<option id="gnu.cpp.compiler.exe.release.option.debugging.level.1258873632" name="Debug Level" superClass="gnu.cpp.compiler.exe.release.option.debugging.level" useByScannerDiscovery="false" value="gnu.cpp.compiler.debugging.level.none" valueType="enumerated"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.453670679" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release">
-								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.exe.release.option.optimization.level.1910888765" name="Optimization Level" superClass="gnu.c.compiler.exe.release.option.optimization.level" useByScannerDiscovery="false" valueType="enumerated"/>
-								<option id="gnu.c.compiler.exe.release.option.debugging.level.1429884986" name="Debug Level" superClass="gnu.c.compiler.exe.release.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.none" valueType="enumerated"/>
+								<option defaultValue="gnu.c.optimization.level.most" id="gnu.c.compiler.exe.release.option.optimization.level.1910888765" name="Optimization Level" superClass="gnu.c.compiler.exe.release.option.optimization.level" useByScannerDiscovery="false" value="gnu.c.optimization.level.none" valueType="enumerated"/>
+								<option id="gnu.c.compiler.exe.release.option.debugging.level.1429884986" name="Debug Level" superClass="gnu.c.compiler.exe.release.option.debugging.level" useByScannerDiscovery="false" value="gnu.c.debugging.level.max" valueType="enumerated"/>
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.650414689" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="&quot;/usr/include/GLFW&quot;"/>
+								</option>
+								<option id="gnu.c.compiler.option.dialect.std.473136798" name="Language standard" superClass="gnu.c.compiler.option.dialect.std" useByScannerDiscovery="true" value="gnu.c.compiler.dialect.c11" valueType="enumerated"/>
+								<option id="gnu.c.compiler.option.warnings.extrawarn.214232809" name="Extra warnings (-Wextra)" superClass="gnu.c.compiler.option.warnings.extrawarn" useByScannerDiscovery="false" value="true" valueType="boolean"/>
+								<option id="gnu.c.compiler.option.warnings.pedantic.1659673260" name="Pedantic (-pedantic)" superClass="gnu.c.compiler.option.warnings.pedantic" useByScannerDiscovery="false" value="true" valueType="boolean"/>
 								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1043412450" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1320318211" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release">
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.link.option.libs.250492012" name="Libraries (-l)" superClass="gnu.c.link.option.libs" useByScannerDiscovery="false" valueType="libs">
+									<listOptionValue builtIn="false" value="glfw"/>
+									<listOptionValue builtIn="false" value="vulkan"/>
+								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.c.linker.input.967231189" superClass="cdt.managedbuild.tool.gnu.c.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -92,6 +104,25 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.2006801366" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release"/>
 							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.1053231962" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release">
 								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.1364091506" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
+							</tool>
+						</toolChain>
+					</folderInfo>
+					<folderInfo id="cdt.managedbuild.config.gnu.exe.release.1434513533.1504118121" name="/" resourcePath="src">
+						<toolChain id="cdt.managedbuild.toolchain.gnu.exe.release.2075586439" name="Linux GCC" superClass="cdt.managedbuild.toolchain.gnu.exe.release" unusedChildren="">
+							<targetPlatform id="cdt.managedbuild.target.gnu.platform.exe.release" name="Debug Platform" superClass="cdt.managedbuild.target.gnu.platform.exe.release"/>
+							<tool id="cdt.managedbuild.tool.gnu.archiver.base.1808873670" name="GCC Archiver" superClass="cdt.managedbuild.tool.gnu.archiver.base.1290048647"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1305304849" name="GCC C++ Compiler" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1413185965"/>
+							<tool id="cdt.managedbuild.tool.gnu.c.compiler.exe.release.1784134579" name="GCC C Compiler" superClass="cdt.managedbuild.tool.gnu.c.compiler.exe.release.453670679">
+								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="gnu.c.compiler.option.include.paths.483700974" name="Include paths (-I)" superClass="gnu.c.compiler.option.include.paths" useByScannerDiscovery="false" valueType="includePath">
+									<listOptionValue builtIn="false" value="/usr/include/GLFW"/>
+									<listOptionValue builtIn="false" value="/usr/include/vulkan"/>
+								</option>
+								<inputType id="cdt.managedbuild.tool.gnu.c.compiler.input.1808799376" superClass="cdt.managedbuild.tool.gnu.c.compiler.input"/>
+							</tool>
+							<tool id="cdt.managedbuild.tool.gnu.c.linker.exe.release.1304029849" name="GCC C Linker" superClass="cdt.managedbuild.tool.gnu.c.linker.exe.release.1320318211"/>
+							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.1512044189" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.release.2006801366"/>
+							<tool id="cdt.managedbuild.tool.gnu.assembler.exe.release.1319774712" name="GCC Assembler" superClass="cdt.managedbuild.tool.gnu.assembler.exe.release.1053231962">
+								<inputType id="cdt.managedbuild.tool.gnu.assembler.input.92599256" superClass="cdt.managedbuild.tool.gnu.assembler.input"/>
 							</tool>
 						</toolChain>
 					</folderInfo>
@@ -125,4 +156,5 @@
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

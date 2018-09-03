@@ -5,8 +5,8 @@
  *      Author: gpi
  */
 
-#ifndef ERROR_HANDLE_H_
-#define ERROR_HANDLE_H_
+#ifndef ERROR_METHODS_H_
+#define ERROR_METHODS_H_
 
 /**
  * Prints a null terminated string to stderr
@@ -16,4 +16,4 @@ void printVulkanError(VkResult err);
 
 void hardExit();
 
-#endif /* ERROR_HANDLE_H_ */
+#endif /* ERROR_METHODS_H_ */

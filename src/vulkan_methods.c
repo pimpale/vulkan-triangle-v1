@@ -1,26 +1,66 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdbool.h>
+#include <errno.h>
+
 #include <vulkan.h>
 
 #include "constants.h"
-#include "memory.h"
-#include "error_handle.h"
-
 #include "vulkan_methods.h"
+#include "error_methods.h"
 
 bool extensionsAvailable(uint32_t enabledExtensionCount, const char* const* ppEnabledExtensionNames)
 {
 	uint32_t extensionCount = 0;
 	vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
-	VkExtensionProperties* arr = criticalMalloc(extensionCount * sizeof(VkExtensionProperties));
+	VkExtensionProperties* arr = malloc(extensionCount * sizeof(VkExtensionProperties));
+	if(!arr)
+	{
+		printError(errno);
+		hardExit();
+	}
 	vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, arr);
 
-	for(int i = 0; i < enabledExtensionCount; i++)
+	for(uint32_t i = 0; i < enabledExtensionCount; i++)
 	{
 		bool found = false;
-		for(int a = 0; a < extensionCount; a++)
+		for(uint32_t a = 0; a < extensionCount; a++)
+		{
+			if(strcmp(ppEnabledExtensionNames[i], arr[a].extensionName) == 0)
+			{
+				found = true;
+				break;
+			}
+		}
+		if(!found)
+		{
+			free(arr);
+			return false;
+		}
+	}
+	free(arr);
+	return true;
+}
+
+
+bool deviceExtensionsAvailable(VkPhysicalDevice device, uint32_t enabledExtensionCount, const char* const* ppEnabledExtensionNames)
+{
+	uint32_t extensionCount = 0;
+	vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, NULL);
+	VkExtensionProperties* arr = malloc(extensionCount * sizeof(VkExtensionProperties));
+	if(!arr)
+	{
+		printError(errno);
+		hardExit();
+	}
+	vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, arr);
+
+	for(uint32_t i = 0; i < enabledExtensionCount; i++)
+	{
+		bool found = false;
+		for(uint32_t a = 0; a < extensionCount; a++)
 		{
 			if(strcmp(ppEnabledExtensionNames[i], arr[a].extensionName) == 0)
 			{
@@ -42,13 +82,18 @@ bool layersAvailable(uint32_t enabledLayerCount, const char* const* ppEnabledLay
 {
 	uint32_t layerCount = 0;
 	vkEnumerateInstanceLayerProperties(&layerCount, NULL);
-	VkLayerProperties* arr = criticalMalloc(layerCount * sizeof(VkLayerProperties));
+	VkLayerProperties* arr = malloc(layerCount * sizeof(VkLayerProperties));
+	if(!arr)
+	{
+		printError(errno);
+		hardExit();
+	}
 	vkEnumerateInstanceLayerProperties(&layerCount, arr);
 
-	for(int i = 0; i < enabledLayerCount; i++)
+	for(uint32_t i = 0; i < enabledLayerCount; i++)
 	{
 		bool found = false;
-		for(int a = 0; a < layerCount; a++)
+		for(uint32_t a = 0; a < layerCount; a++)
 		{
 			if(strcmp(ppEnabledLayerNames[i], arr[a].layerName) == 0)
 			{
@@ -72,7 +117,14 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugUtilsMessageTypeFlagsEXT messageType,
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData) {
-	fprintf(stderr, "%s\n", pCallbackData->pMessage);
+
+	FILE* out = stdout;
+	if(messageSeverity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT)
+	{
+		out = stderr;
+	}
+
+	fprintf(out, "%s\n", pCallbackData->pMessage);
 	return VK_FALSE;
 }
 
@@ -171,12 +223,17 @@ VkPhysicalDevice createPhysicalDevice(VkInstance instance) {
 		fprintf(stderr,"no vulkan capable device found, quitting\n");
 		hardExit();
 	}
-	VkPhysicalDevice* arr = criticalMalloc(deviceCount * sizeof(VkPhysicalDevice));
+	VkPhysicalDevice* arr = malloc(deviceCount * sizeof(VkPhysicalDevice));
+	if(!arr)
+	{
+		printError(errno);
+		hardExit();
+	}
 	vkEnumeratePhysicalDevices(instance, &deviceCount, arr);
 
 	VkPhysicalDeviceProperties deviceProperties;
 	VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
-	for(int i = 0; i < deviceCount; i++)
+	for(uint32_t i = 0; i < deviceCount; i++)
 	{
 		vkGetPhysicalDeviceProperties(arr[i], &deviceProperties);
 		puts(deviceProperties.deviceName);
@@ -205,9 +262,14 @@ int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit)
 {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
-	VkQueueFamilyProperties* arr = criticalMalloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
+	VkQueueFamilyProperties* arr = malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
+	if(!arr)
+	{
+		printError(errno);
+		hardExit();
+	}
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, arr);
-	for(int i = 0; i < queueFamilyCount; i++)
+	for(uint32_t i = 0; i < queueFamilyCount; i++)
 	{
 		if (arr[i].queueCount > 0 && (arr[0].queueFlags & bit)) {
 			free(arr);
@@ -217,6 +279,7 @@ int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit)
 	free(arr);
 	return -1;
 }
+
 
 VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice,
 		uint32_t deviceQueueIndex,
