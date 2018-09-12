@@ -9,5 +9,7 @@
 #define GLFW_METHODS_H_
 
 
+GLFWwindow* createGlfwWindow();
+VkSurfaceKHR createSurface(GLFWwindow* window, VkInstance instance);
 
 #endif /* GLFW_METHODS_H_ */

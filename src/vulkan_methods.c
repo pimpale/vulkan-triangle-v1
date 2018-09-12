@@ -258,6 +258,7 @@ void destroyDevice(VkDevice device)
 {
 	vkDestroyDevice(device, NULL);
 }
+
 int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit)
 {
 	uint32_t queueFamilyCount = 0;
@@ -273,6 +274,30 @@ int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit)
 	{
 		if (arr[i].queueCount > 0 && (arr[0].queueFlags & bit)) {
 			free(arr);
+			return i;
+		}
+	}
+	free(arr);
+	return -1;
+}
+
+int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface)
+{
+	uint32_t queueFamilyCount = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
+	VkQueueFamilyProperties* arr = malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
+	if(!arr)
+	{
+		printError(errno);
+		hardExit();
+	}
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, arr);
+	for(uint32_t i = 0; i < queueFamilyCount; i++)
+	{
+		VkBool32 surfaceSupport = false;
+		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &surfaceSupport);
+		if(surfaceSupport)
+		{
 			return i;
 		}
 	}
@@ -320,6 +345,11 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice,
 
 VkQueue createQueue(VkDevice device, uint32_t deviceQueueIndex) {
 	VkQueue queue;
-	vkGetDeviceQueue(device, deviceQueueIndex, 0, &queue);
+	VkResult ret = vkGetDeviceQueue(device, deviceQueueIndex, 0, &queue);
+	if(ret != VK_SUCCESS)
+	{
+		fprintf(stderr, "failed to create queue, quitting");
+		hardExit();
+	}
 	return queue;
 }

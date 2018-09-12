@@ -9,9 +9,7 @@
 
 #include "error_methods.h"
 #include "vulkan_methods.h"
-
-
-
+#include "glfw_methods.h"
 
 int main(void) {
 	glfwInit();
@@ -34,25 +32,35 @@ int main(void) {
 	//Initialize layers to use
 	uint32_t layerCount = 1;
 	const char* layerNames[] = { "VK_LAYER_LUNARG_standard_validation" };
-
-
 	//Create instance
 	VkInstance instance = createInstance(extensionCount, extensionNames, layerCount, layerNames);
 	VkDebugUtilsMessengerEXT callback = createDebugCallback(instance);
 	VkPhysicalDevice physicalDevice = createPhysicalDevice(instance);
-	int32_t index = getDeviceQueueIndex(physicalDevice,VK_QUEUE_GRAPHICS_BIT);
-	if(index == -1)
+
+	//Create window and surface
+	GLFWwindow* window = createGlfwWindow();
+	VkSurfaceKHR surface = createSurface(window,instance);
+	VkDevice device = createLogicalDevice(physicalDevice,(uint32_t)index, 0, NULL, layerCount, layerNames);
+
+	int32_t graphicsQueueIndex = getDeviceQueueIndex(physicalDevice,VK_QUEUE_GRAPHICS_BIT);
+	int32_t presentQueueIndex = getPresentQueueIndex(physicalDevice,surface);
+	if(graphicsQueueIndex == -1 || presentQueueIndex == -1)
 	{
 		fprintf(stderr, "found no suitable queue on device, quitting\n");
 	}
-	VkDevice device = createLogicalDevice(physicalDevice,(uint32_t)index, 0, NULL, layerCount, layerNames);
-	VkQueue graphicsQueue = createQueue(device, index);
 
+	//create queues
+	VkQueue graphicsQueue = createQueue(device, graphicsQueueIndex);
+	VkQueue presentQueue = createQueue(device, presentQueueIndex);
 
-
+	while(!glfwWindowShouldClose(window))
+	{
+		glfwPollEvents();
+	}
 
 	destroyDevice(device);
 	destroyDebugCallback(instance,callback);
 	destroyInstance(instance);
+	glfwTerminate();
 	return EXIT_SUCCESS;
 }
