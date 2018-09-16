@@ -21,7 +21,8 @@ GLFWwindow* createGlfwWindow()
 VkSurfaceKHR createSurface(GLFWwindow* window, VkInstance instance)
 {
 	VkSurfaceKHR surface= {0};
-	if (glfwCreateWindowSurface(instance, window, NULL, &surface) != VK_SUCCESS) {
+	VkResult res = glfwCreateWindowSurface(instance, window, NULL, &surface);
+	if (res != VK_SUCCESS) {
 		fprintf(stderr,"failed to create surface, quitting\n");
 		hardExit();
 	}

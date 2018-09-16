@@ -8,11 +8,9 @@
 #ifndef UTIL_METHODS_H_
 #define UTIL_METHODS_H_
 
-void mergeLists(uint32_t* len1, const char const* data1, uint32_t len2, const char const* data2, uint32_t* resultlen, const char* resultdata)
-{
-	//TODO do this if necessary
-}
 
+
+void concatArray(size_t len1, void* src1, size_t len2, void* src2, size_t destlen, void* dest);
 
 
 #endif /* UTIL_METHODS_H_ */

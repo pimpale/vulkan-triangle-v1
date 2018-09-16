@@ -56,13 +56,45 @@ bool deviceExtensionsAvailable(VkPhysicalDevice device, uint32_t enabledExtensio
 		hardExit();
 	}
 	vkEnumerateDeviceExtensionProperties(device, NULL, &extensionCount, arr);
-
 	for(uint32_t i = 0; i < enabledExtensionCount; i++)
 	{
 		bool found = false;
 		for(uint32_t a = 0; a < extensionCount; a++)
 		{
 			if(strcmp(ppEnabledExtensionNames[i], arr[a].extensionName) == 0)
+			{
+				found = true;
+				break;
+			}
+		}
+		if(!found)
+		{
+			free(arr);
+			return false;
+		}
+	}
+	free(arr);
+	return true;
+}
+
+bool deviceLayersAvailable(VkPhysicalDevice device, uint32_t enabledLayerCount, const char* const* ppEnabledLayerNames)
+{
+	uint32_t layerCount = 0;
+	vkEnumerateDeviceLayerProperties(device, &layerCount, NULL);
+	VkLayerProperties* arr = malloc(layerCount * sizeof(VkLayerProperties));
+	if(!arr)
+	{
+		printError(errno);
+		hardExit();
+	}
+	vkEnumerateDeviceLayerProperties(device, &layerCount, arr);
+
+	for(uint32_t i = 0; i < enabledLayerCount; i++)
+	{
+		bool found = false;
+		for(uint32_t a = 0; a < layerCount; a++)
+		{
+			if(strcmp(ppEnabledLayerNames[i], arr[a].layerName) == 0)
 			{
 				found = true;
 				break;
@@ -110,7 +142,6 @@ bool layersAvailable(uint32_t enabledLayerCount, const char* const* ppEnabledLay
 	free(arr);
 	return true;
 }
-
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -236,7 +267,6 @@ VkPhysicalDevice createPhysicalDevice(VkInstance instance) {
 	for(uint32_t i = 0; i < deviceCount; i++)
 	{
 		vkGetPhysicalDeviceProperties(arr[i], &deviceProperties);
-		puts(deviceProperties.deviceName);
 		int32_t ret = getDeviceQueueIndex(arr[i],VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 		if(ret != -1 )
 		{
@@ -313,6 +343,18 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice,
 		uint32_t enabledLayerCount,
 		const char* const* ppEnabledLayerNames)
 {
+	// check layers
+	if(!deviceLayersAvailable(physicalDevice, enabledLayerCount, ppEnabledLayerNames)) {
+		fprintf(stderr, "requested layers not available, quitting\n");
+		hardExit();
+	}
+
+	// check extensions
+	if(!deviceExtensionsAvailable(physicalDevice, enabledExtensionCount, ppEnabledExtensionNames)) {
+		fprintf(stderr, "requested extensions not available, quitting\n");
+		hardExit();
+	}
+
 	VkPhysicalDeviceFeatures deviceFeatures = {0};
 
 	VkDeviceQueueCreateInfo queueCreateInfo = { 0 };
@@ -345,11 +387,6 @@ VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice,
 
 VkQueue createQueue(VkDevice device, uint32_t deviceQueueIndex) {
 	VkQueue queue;
-	VkResult ret = vkGetDeviceQueue(device, deviceQueueIndex, 0, &queue);
-	if(ret != VK_SUCCESS)
-	{
-		fprintf(stderr, "failed to create queue, quitting");
-		hardExit();
-	}
+	vkGetDeviceQueue(device, deviceQueueIndex, 0, &queue);
 	return queue;
 }
