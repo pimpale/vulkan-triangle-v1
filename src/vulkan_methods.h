@@ -11,36 +11,35 @@
 #include <stdbool.h>
 #include <vulkan.h>
 
-
 #define NULL_INDEX -1
 
 typedef struct {
-	uint32_t computeIndex;
-	uint32_t graphicsIndex;
-	uint32_t presentIndex;
+  uint32_t computeIndex;
+  uint32_t graphicsIndex;
+  uint32_t presentIndex;
 
-	bool hasCompute;
-	bool hasGraphics;
-	bool hasPresent;
+  bool hasCompute;
+  bool hasGraphics;
+  bool hasPresent;
 } DeviceIndexes;
 
-VkInstance createInstance(
-		uint32_t				enabledExtensionCount,
-		const char* const*		ppEnabledExtensionNames,
-		uint32_t 				enabledLayerCount,
-		const char* const* 		ppEnabledLayerNames);
+VkInstance createInstance(uint32_t enabledExtensionCount,
+                          const char *const *ppEnabledExtensionNames,
+                          uint32_t enabledLayerCount,
+                          const char *const *ppEnabledLayerNames);
 void destroyInstance(VkInstance instance);
 VkDebugUtilsMessengerEXT createDebugCallback(VkInstance instance);
-void destroyDebugCallback(VkInstance instance, VkDebugUtilsMessengerEXT callback);
+void destroyDebugCallback(VkInstance instance,
+                          VkDebugUtilsMessengerEXT callback);
 
 VkPhysicalDevice createPhysicalDevice(VkInstance instance);
 
 VkDevice createLogicalDevice(VkPhysicalDevice physicalDevice,
-		uint32_t deviceQueueIndex,
-		uint32_t enabledExtensionCount,
-		const char* const* ppEnabledExtensionNames,
-		uint32_t enabledLayerCount,
-		const char* const* ppEnabledLayerNames);
+                             uint32_t deviceQueueIndex,
+                             uint32_t enabledExtensionCount,
+                             const char *const *ppEnabledExtensionNames,
+                             uint32_t enabledLayerCount,
+                             const char *const *ppEnabledLayerNames);
 
 void destroyDevice(VkDevice device);
 
