@@ -13,7 +13,14 @@
 
 #define NULL_INDEX -1
 
+/**
+ * This struct must be initialized with
+ */
 typedef struct {
+  VkPhysicalDevice device;
+
+
+
   uint32_t computeIndex;
   uint32_t graphicsIndex;
   uint32_t presentIndex;
@@ -21,7 +28,10 @@ typedef struct {
   bool hasCompute;
   bool hasGraphics;
   bool hasPresent;
-} DeviceIndexes;
+
+
+
+} DeviceInfo;
 
 VkInstance createInstance(uint32_t enabledExtensionCount,
                           const char *const *ppEnabledExtensionNames,

@@ -28,10 +28,11 @@ int main(void) {
   }
 
   concatArray((char *[]){VK_EXT_DEBUG_UTILS_EXTENSION_NAME},
-			  (size_t)(1 * sizeof(char **)),
-              ppGlfwExtensionNames, (size_t)(extensionCount * sizeof(char **)),
+			  (uint32_t)(1 * sizeof(char **)),
+			  (uint32_t)(extensionCount * sizeof(char **)),
+              ppGlfwExtensionNames,
               ppExtensionNames,
-              (size_t)(glfwExtensionCount * sizeof(char **)));
+              (uint32_t)(glfwExtensionCount * sizeof(char **)));
 
   // Initialize layers to use
   uint32_t layerCount = 1;
