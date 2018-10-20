@@ -45,7 +45,7 @@ VkInstance createInstance(struct InstanceInfo instanceInfo,
 				NULL, 0, &matchnum);
 
 		if (matchnum != enabledExtensionCount) {
-			errLog(FATAL, "failed to find extension\n");
+			errLog(FATAL, "failed to find required extension\n");
 			hardExit();
 		}
 
@@ -54,7 +54,7 @@ VkInstance createInstance(struct InstanceInfo instanceInfo,
 				NULL, 0, &matchnum);
 
 		if (matchnum != enabledLayerCount) {
-			errLog(FATAL, "failed to find layer\n");
+			errLog(FATAL, "failed to find required layer\n");
 			hardExit();
 		}
 	}
@@ -283,8 +283,10 @@ struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 	vkGetPhysicalDeviceProperties(physicalDevice, &info.deviceProperties);
 	vkGetPhysicalDeviceFeatures(physicalDevice, &info.deviceFeatures);
 
-	vkEnumerateInstanceLayerProperties(&info.layerCount, NULL);
-	vkEnumerateInstanceExtensionProperties(NULL, &info.extensionCount, NULL);
+	vkEnumerateDeviceLayerProperties(physicalDevice, &info.layerCount,
+			NULL);
+	vkEnumerateDeviceExtensionProperties(physicalDevice, NULL,
+			&info.extensionCount, NULL);
 
 	//alloc number dependent info
 	info.ppLayerNames = malloc(info.layerCount * sizeof(char*));
@@ -301,8 +303,10 @@ struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 		hardExit();
 	}
 
-	vkEnumerateInstanceLayerProperties(&info.layerCount, pLayerProperties);
-	vkEnumerateInstanceExtensionProperties(NULL, &info.extensionCount,
+	vkEnumerateDeviceLayerProperties(physicalDevice, &info.layerCount,
+			pLayerProperties);
+	vkEnumerateDeviceExtensionProperties(physicalDevice, NULL,
+			&info.extensionCount,
 			pExtensionProperties);
 
 	//copy names to info
@@ -361,7 +365,7 @@ VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
 				NULL, 0, &matchnum);
 
 		if (matchnum != enabledExtensionCount) {
-			errLog(FATAL, "failed to find extension\n");
+			errLog(FATAL, "failed to find required device extension\n");
 			hardExit();
 		}
 
@@ -370,7 +374,7 @@ VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
 				NULL, 0, &matchnum);
 
 		if (matchnum != enabledLayerCount) {
-			errLog(FATAL, "failed to find layer\n");
+			errLog(FATAL, "failed to find required device layer\n");
 			hardExit();
 		}
 	}
