@@ -11,6 +11,8 @@
 #define APPNAME "vulkan rotating cube"
 #define DEBUG 1
 
+#define MAX_PRINT_LENGTH 4096
+
 #define WINDOW_HEIGHT 500
 #define WINDOW_WIDTH 500
 

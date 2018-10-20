@@ -50,6 +50,8 @@ void concatArray(void *src1, uint32_t len1, void *src2, uint32_t len2,
  * that are greater than the number of matches will not be touched.
  *
  * Returns: void
+ *
+ * TODO prevent overflows
  */
 void findMatchingStrings(const char *const *ppData, uint32_t dataLen,
                          const char *const *ppQuery, uint32_t queryLen,
