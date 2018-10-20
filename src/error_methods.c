@@ -22,7 +22,7 @@ void printVulkanError(VkResult error) {
 	if (error != VK_SUCCESS) {
 		char* buf = snprintf(buf, MAX_PRINT_LENGTH, "Vulkan error: %i\n",
 				(int) error);
-		errLog(buf);
+		errLog(ERROR, buf);
 	}
 }
 

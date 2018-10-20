@@ -49,11 +49,14 @@ struct DeviceIndices {
 	bool hasPresent;
 };
 
+struct InstanceInfo getInstanceInfo();
+
 VkInstance createInstance(struct InstanceInfo instanceInfo,
 		uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
 		uint32_t enabledLayerCount,
 		const char *const *ppEnabledLayerNames);
+
 
 void destroyInstance(VkInstance instance);
 
@@ -63,6 +66,8 @@ void destroyDebugCallback(VkInstance instance,
 		VkDebugUtilsMessengerEXT callback);
 
 VkPhysicalDevice createPhysicalDevice(VkInstance instance);
+
+struct DeviceInfo getDeviceInfo(VkPhysicalDevice);
 
 VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
 		VkPhysicalDevice physicalDevice,

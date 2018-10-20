@@ -28,7 +28,7 @@
 void printError(int errnum);
 void printVulkanError(VkResult err);
 
-void errLog(int level, char* message);
+void errLog(int level, const char* message);
 
 void hardExit();
 

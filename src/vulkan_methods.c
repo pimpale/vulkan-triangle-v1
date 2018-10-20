@@ -35,8 +35,8 @@ VkInstance createInstance(struct InstanceInfo instanceInfo,
 		const char *const *ppEnabledExtensionNames,
 		uint32_t enabledLayerCount,
 		const char *const *ppEnabledLayerNames) {
-	// check layers and extensions
 
+	// check layers and extensions
 	{
 		uint32_t matchnum = 0;
 		findMatchingStrings((const char* const *) instanceInfo.ppExtensionNames,
@@ -375,22 +375,6 @@ VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
 		}
 	}
 
-
-
-	// check layers
-	if (!deviceLayersAvailable(physicalDevice, enabledLayerCount,
-			ppEnabledLayerNames)) {
-		errLog(ERROR, "requested layers not available");
-		hardExit();
-	}
-
-	// check extensions
-	if (!deviceExtensionsAvailable(physicalDevice, enabledExtensionCount,
-			ppEnabledExtensionNames)) {
-		ouch(stderr, "requested extensions not available, quitting\n");
-		hardExit();
-	}
-
 	VkPhysicalDeviceFeatures deviceFeatures = {0};
 
 	VkDeviceQueueCreateInfo queueCreateInfo = {0};
@@ -413,7 +397,7 @@ VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
 	VkDevice device;
 	VkResult res = vkCreateDevice(physicalDevice, &createInfo, NULL, &device);
 	if (res != VK_SUCCESS) {
-		ouch(stderr, "failed to create device, quitting\n");
+		printVulkanError(res);
 		hardExit();
 	}
 

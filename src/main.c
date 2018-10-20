@@ -13,72 +13,82 @@
 #include "vulkan_methods.h"
 
 int main(void) {
-  glfwInit();
+	glfwInit();
 
-  // define our own extensions
-  // get glfw extensions to use
-  uint32_t glfwExtensionCount = 0;
-  const char **ppGlfwExtensionNames =
-      glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-  uint32_t extensionCount = 1 + glfwExtensionCount;
-  const char **ppExtensionNames = malloc(sizeof(char *) * extensionCount);
-  if (!ppExtensionNames) {
-    printError(errno);
-    hardExit();
-  }
+	//Extensions, Layers, and Device Extensions declared (some initialized
+	uint32_t extensionCount;
+	const char **ppExtensionNames;
+	uint32_t layerCount = 1;
+	const char *ppLayerNames[] = { "VK_LAYER_LUNARG_standard_validation" };
+	uint32_t deviceExtensionCount = 1;
+	const char *ppDeviceExtensionNames[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-  concatArray((char *[]){VK_EXT_DEBUG_UTILS_EXTENSION_NAME},
-			  (uint32_t)(1 * sizeof(char **)),
-			  (uint32_t)(extensionCount * sizeof(char **)),
-              ppGlfwExtensionNames,
-              ppExtensionNames,
-              (uint32_t)(glfwExtensionCount * sizeof(char **)));
+	//set other uninitialized stuff
+	{
+		// define our own extensions
+		// get glfw extensions to use
+		uint32_t glfwExtensionCount = 0;
+		const char **ppGlfwExtensionNames = glfwGetRequiredInstanceExtensions(
+				&glfwExtensionCount);
+		extensionCount = 1 + glfwExtensionCount;
 
-  // Initialize layers to use
-  uint32_t layerCount = 1;
-  const char *ppLayerNames[] = {"VK_LAYER_LUNARG_standard_validation"};
+		ppExtensionNames = malloc(sizeof(char *) * extensionCount);
 
-  // Device extensions to be used
-  uint32_t deviceExtensionCount = 1;
-  const char *ppDeviceExtensionNames[] = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+		if (!ppExtensionNames) {
+			printError(errno);
+			hardExit();
+		}
 
-  // Create instance
-  VkInstance instance = createInstance(extensionCount, ppExtensionNames,
-                                       layerCount, ppLayerNames);
-  VkDebugUtilsMessengerEXT callback = createDebugCallback(instance);
+		ppExtensionNames[0] = "VK_EXT_debug_utils";
+		for (uint32_t i = 0; i < glfwExtensionCount; i++) {
+			ppExtensionNames[i + 1] = ppGlfwExtensionNames[i];
+		}
+	}
 
-  VkPhysicalDevice physicalDevice = createPhysicalDevice(instance);
 
-  // Create window and surface
-  GLFWwindow *pWindow = createGlfwWindow();
-  VkSurfaceKHR surface = createSurface(pWindow, instance);
 
-  // find queue on graphics device
-  int32_t graphicsQueueIndex =
-      getDeviceQueueIndex(physicalDevice, VK_QUEUE_GRAPHICS_BIT);
-  int32_t presentQueueIndex = getPresentQueueIndex(physicalDevice, surface);
-  if (graphicsQueueIndex == -1 || presentQueueIndex == -1) {
-    fprintf(stderr, "found no suitable queue on device, quitting\n");
-    hardExit();
-  }
-  VkDevice device = createLogicalDevice(
-      physicalDevice, (uint32_t)graphicsQueueIndex, deviceExtensionCount,
-      ppDeviceExtensionNames, layerCount, ppLayerNames);
+	//get instance info
+	struct InstanceInfo instanceInfo = getInstanceInfo();
 
-  // create queues
-  VkQueue graphicsQueue = createQueue(device, (uint32_t)graphicsQueueIndex);
-  VkQueue presentQueue = createQueue(device, (uint32_t)presentQueueIndex);
+	// Create instance
+	VkInstance instance = createInstance(instanceInfo, extensionCount,
+			ppExtensionNames, layerCount, ppLayerNames);
+	VkDebugUtilsMessengerEXT callback = createDebugCallback(instance);
 
-  while (!glfwWindowShouldClose(pWindow)) {
-    glfwPollEvents();
-  }
+	VkPhysicalDevice physicalDevice = createPhysicalDevice(instance);
+	struct DeviceInfo deviceInfo = getDeviceInfo(physicalDevice);
 
-  puts("quitting");
 
-  destroyDevice(device);
-  destroyDebugCallback(instance, callback);
-  destroyInstance(instance);
-  free(ppExtensionNames);
-  glfwTerminate();
-  return EXIT_SUCCESS;
+	// Create window and surface
+	GLFWwindow *pWindow = createGlfwWindow();
+	VkSurfaceKHR surface = createSurface(pWindow, instance);
+
+	// find queue on graphics device
+	int32_t graphicsQueueIndex = getDeviceQueueIndex(physicalDevice,
+			VK_QUEUE_GRAPHICS_BIT);
+	int32_t presentQueueIndex = getPresentQueueIndex(physicalDevice, surface);
+	if (graphicsQueueIndex == -1 || presentQueueIndex == -1) {
+		fprintf(stderr, "found no suitable queue on device, quitting\n");
+		hardExit();
+	}
+	VkDevice device = createLogicalDevice(deviceInfo, physicalDevice,
+			(uint32_t) graphicsQueueIndex, deviceExtensionCount,
+			ppDeviceExtensionNames, layerCount, ppLayerNames);
+
+	// create queues
+	VkQueue graphicsQueue = createQueue(device, (uint32_t) graphicsQueueIndex);
+	VkQueue presentQueue = createQueue(device, (uint32_t) presentQueueIndex);
+
+	while (!glfwWindowShouldClose(pWindow)) {
+		glfwPollEvents();
+	}
+
+	puts("quitting");
+
+	destroyDevice(device);
+	destroyDebugCallback(instance, callback);
+	destroyInstance(instance);
+	free(ppExtensionNames);
+	glfwTerminate();
+	return EXIT_SUCCESS;
 }
