@@ -209,6 +209,37 @@ int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface) {
 	return -1;
 }
 
+struct DeviceIndices getDeviceIndices(VkPhysicalDevice device,
+		VkSurfaceKHR surface) {
+	struct DeviceIndices deviceIndices = { 0 };
+
+	int32_t tmp = getDeviceQueueIndex(device, VK_QUEUE_GRAPHICS_BIT);
+	if (tmp != -1) {
+		deviceIndices.hasGraphics = true;
+		deviceIndices.graphicsIndex = (uint32_t) tmp;
+	} else {
+		deviceIndices.hasGraphics = false;
+	}
+
+	int32_t tmp = getDeviceQueueIndex(device, VK_QUEUE_COMPUTE_BIT);
+	if (tmp != -1) {
+		deviceIndices.hasCompute = true;
+		deviceIndices.computeIndex = (uint32_t) tmp;
+	} else {
+		deviceIndices.hasCompute = false;
+	}
+
+	deviceIndices.hasPresent = false;
+	if (surface != VK_NULL_HANDLE) {
+		tmp = getPresentQueueIndex(device, surface);
+		if (tmp != -1) {
+			deviceIndices.hasPresent = true;
+			deviceIndices.presentIndex = (uint32_t) tmp;
+		}
+	}
+	return deviceIndices;
+}
+
 struct InstanceInfo getInstanceInfo() {
 	struct InstanceInfo info;
 	vkEnumerateInstanceLayerProperties(&info.layerCount, NULL);
@@ -283,12 +314,13 @@ struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 	vkGetPhysicalDeviceProperties(physicalDevice, &info.deviceProperties);
 	vkGetPhysicalDeviceFeatures(physicalDevice, &info.deviceFeatures);
 
+	//set extension and layer counts
 	vkEnumerateDeviceLayerProperties(physicalDevice, &info.layerCount,
 			NULL);
 	vkEnumerateDeviceExtensionProperties(physicalDevice, NULL,
 			&info.extensionCount, NULL);
 
-	//alloc number dependent info
+	//alloc count dependent info
 	info.ppLayerNames = malloc(info.layerCount * sizeof(char*));
 	info.ppExtensionNames = malloc(info.extensionCount * sizeof(char*));
 	VkLayerProperties* pLayerProperties = malloc(
@@ -296,20 +328,20 @@ struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 	VkExtensionProperties* pExtensionProperties = malloc(
 			info.extensionCount * sizeof(VkExtensionProperties));
 
-	//check if not null
 	if (!info.ppExtensionNames || !info.ppLayerNames || !pLayerProperties
 			|| !pExtensionProperties) {
 		printError(errno);
 		hardExit();
 	}
 
+	//grab values
 	vkEnumerateDeviceLayerProperties(physicalDevice, &info.layerCount,
 			pLayerProperties);
 	vkEnumerateDeviceExtensionProperties(physicalDevice, NULL,
 			&info.extensionCount,
 			pExtensionProperties);
 
-	//copy names to info
+	//copy names to info, mallocing as we go.
 	for (uint32_t i = 0; i < info.layerCount; i++) {
 		info.ppLayerNames[i] = malloc(
 		VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
@@ -412,4 +444,76 @@ VkQueue createQueue(VkDevice device, uint32_t deviceQueueIndex) {
 	VkQueue queue;
 	vkGetDeviceQueue(device, deviceQueueIndex, 0, &queue);
 	return queue;
+}
+
+VkSwapchainKHR createSwapChain(VkSwapchainKHR oldSwapChain,
+		VkDevice device,
+		VkPhysicalDevice physicalDevice,
+		VkSurfaceKHR surface, VkExtent2D extent,
+		struct DeviceIndices deviceIndices) {
+
+	VkSwapchainKHR swapChain;
+	VkSurfaceCapabilitiesKHR capabilities;
+
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
+			&capabilities);
+
+	VkSwapchainCreateInfoKHR createInfo = { 0 };
+	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+	createInfo.surface = surface;
+
+	createInfo.minImageCount = 2;
+	createInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
+	createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; //TODO what if this fails (but good enough for now)
+	createInfo.imageExtent = extent;
+	createInfo.imageArrayLayers = 1;
+	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+	if (!deviceIndices.hasGraphics || !deviceIndices.hasPresent) {
+		errLog(FATAL, "Invalid device to create swap chain\n");
+	}
+
+	uint32_t queueFamilyIndices[] = { deviceIndices.graphicsIndex,
+			deviceIndices.presentIndex };
+	if (deviceIndices.graphicsIndex != deviceIndices.presentIndex) {
+		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+		createInfo.queueFamilyIndexCount = 2;
+		createInfo.pQueueFamilyIndices = queueFamilyIndices;
+	} else {
+		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+		createInfo.queueFamilyIndexCount = 0; // Optional
+		createInfo.pQueueFamilyIndices = NULL; // Optional
+	}
+
+	createInfo.preTransform = capabilities.currentTransform;
+	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+	createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+	createInfo.clipped = VK_TRUE;
+
+	createInfo.oldSwapchain = oldSwapChain;
+
+	VkResult res = vkCreateSwapchainKHR(device, &createInfo, NULL, &swapChain);
+	if (res != VK_SUCCESS) {
+		printVulkanError(res);
+		hardExit();
+	}
+
+	return swapChain;
+}
+
+void destroySwapChain(VkDevice device, VkSwapchainKHR swapChain) {
+	vkDestroySwapchainKHR(device, swapChain, NULL);
+}
+
+void getSwapChainImages(VkDevice device, VkSwapchainKHR swapChain,
+		uint32_t *imageCount, VkImage *images) {
+	vkGetSwapchainImagesKHR(device, swapChain, imageCount, NULL);
+	VkImage* tmp = realloc(images, (*imageCount) * sizeof(VkImage));
+	if (!tmp) {
+		printError(errno);
+		hardExit();
+	} else {
+		images = tmp;
+	}
+	vkGetSwapchainImagesKHR(device, swapChain, imageCount, images);
 }

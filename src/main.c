@@ -7,6 +7,7 @@
 #define GLFW_DEFINE_VULKAN
 #include <glfw3.h>
 
+#include "constants.h"
 #include "error_methods.h"
 #include "glfw_methods.h"
 #include "util_methods.h"
@@ -63,31 +64,47 @@ int main(void) {
 	GLFWwindow *pWindow = createGlfwWindow();
 	VkSurfaceKHR surface = createSurface(pWindow, instance);
 
-	// find queue on graphics device
-	int32_t graphicsQueueIndex = getDeviceQueueIndex(physicalDevice,
-			VK_QUEUE_GRAPHICS_BIT);
-	int32_t presentQueueIndex = getPresentQueueIndex(physicalDevice, surface);
-	if (graphicsQueueIndex == -1 || presentQueueIndex == -1) {
-		fprintf(stderr, "found no suitable queue on device, quitting\n");
-		hardExit();
+	// find queues on graphics device
+	struct DeviceIndices deviceIndices = getDeviceIndices(physicalDevice,
+			surface);
+	//fail if our required indices are not present
+	if (!deviceIndices.hasGraphics || !deviceIndices.hasPresent
+			|| !deviceIndices.hasPresent) {
+		errLog(FATAL, "unable to acquire indices\n");
 	}
+	//create device
 	VkDevice device = createLogicalDevice(deviceInfo, physicalDevice,
-			(uint32_t) graphicsQueueIndex, deviceExtensionCount,
+			deviceIndices.graphicsIndex, deviceExtensionCount,
 			ppDeviceExtensionNames, layerCount, ppLayerNames);
 
 	// create queues
-	VkQueue graphicsQueue = createQueue(device, (uint32_t) graphicsQueueIndex);
-	VkQueue presentQueue = createQueue(device, (uint32_t) presentQueueIndex);
+	VkQueue graphicsQueue = createQueue(device, deviceIndices.graphicsIndex);
+	VkQueue presentQueue = createQueue(device, deviceIndices.presentIndex);
 
+	//Create swap chain
+	VkSwapchainKHR
+	swapChain = createSwapChain(VK_NULL_HANDLE,
+			device,
+			physicalDevice,
+			surface,
+			(VkExtent2D ) { WINDOW_WIDTH, WINDOW_HEIGHT },
+			deviceIndices);
+
+
+
+
+	//wait till close
 	while (!glfwWindowShouldClose(pWindow)) {
 		glfwPollEvents();
 	}
 
-	puts("quitting");
-
+	//cleanup
+	destroySwapChain(device, swapChain);
 	destroyDevice(device);
+	destroyDeviceInfo(deviceInfo);
 	destroyDebugCallback(instance, callback);
 	destroyInstance(instance);
+	destroyInstanceInfo(instanceInfo);
 	free(ppExtensionNames);
 	glfwTerminate();
 	return EXIT_SUCCESS;
