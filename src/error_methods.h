@@ -22,11 +22,6 @@
 #define FATAL_MSG "FATAL"
 #define UNKNOWN_MSG "UNKNOWN_SEVERITY"
 
-/**
- * Prints a null terminated string to stderr
- */
-void printError(int errnum);
-
 void errLog(int level, const char* message, ...);
 
 void hardExit();

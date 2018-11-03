@@ -45,7 +45,7 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	return (VK_FALSE);
 }
 
-VkInstance createInstance(struct InstanceInfo instanceInfo,
+VkInstance new_Instance(struct InstanceInfo instanceInfo,
 		uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
 		uint32_t enabledLayerCount,
@@ -101,12 +101,12 @@ VkInstance createInstance(struct InstanceInfo instanceInfo,
 	return (instance);
 }
 
-void destroyInstance(VkInstance instance) { vkDestroyInstance(instance, NULL); }
+void delete_Instance(VkInstance instance) { vkDestroyInstance(instance, NULL); }
 
 /**
  * Requires the debug utils extension
  */
-VkDebugUtilsMessengerEXT createDebugCallback(VkInstance instance) {
+VkDebugUtilsMessengerEXT new_DebugCallback(VkInstance instance) {
 	VkDebugUtilsMessengerCreateInfoEXT createInfo = {0};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -139,7 +139,7 @@ VkDebugUtilsMessengerEXT createDebugCallback(VkInstance instance) {
 /**
  * Requires the debug utils extension
  */
-void destroyDebugCallback(VkInstance instance,
+void delete_DebugCallback(VkInstance instance,
 		VkDebugUtilsMessengerEXT callback) {
 	PFN_vkDestroyDebugUtilsMessengerEXT func =
 			(PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
@@ -149,7 +149,7 @@ void destroyDebugCallback(VkInstance instance,
 	}
 }
 
-VkPhysicalDevice createPhysicalDevice(VkInstance instance) {
+VkPhysicalDevice getPhysicalDevice(VkInstance instance) {
 	uint32_t deviceCount = 0;
 	VkResult res = vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
 	if (res != VK_SUCCESS || deviceCount == 0) {
@@ -158,7 +158,7 @@ VkPhysicalDevice createPhysicalDevice(VkInstance instance) {
 	}
 	VkPhysicalDevice *arr = malloc(deviceCount * sizeof(VkPhysicalDevice));
 	if (!arr) {
-		printError(errno);
+		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 		hardExit();
 	}
 	vkEnumeratePhysicalDevices(instance, &deviceCount, arr);
@@ -183,7 +183,7 @@ VkPhysicalDevice createPhysicalDevice(VkInstance instance) {
 	return (selectedDevice);
 }
 
-void destroyDevice(VkDevice device) { vkDestroyDevice(device, NULL); }
+void delete_Device(VkDevice device) { vkDestroyDevice(device, NULL); }
 
 int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit) {
 	uint32_t queueFamilyCount = 0;
@@ -191,7 +191,7 @@ int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit) {
 	VkQueueFamilyProperties *arr =
 			malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	if (!arr) {
-		printError(errno);
+		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 		hardExit();
 	}
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, arr);
@@ -211,7 +211,7 @@ int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface) {
 	VkQueueFamilyProperties *arr =
 			malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	if (!arr) {
-		printError(errno);
+		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 		hardExit();
 	}
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, arr);
@@ -257,7 +257,7 @@ struct DeviceIndices getDeviceIndices(VkPhysicalDevice physicalDevice,
 	return (deviceIndices);
 }
 
-struct InstanceInfo getInstanceInfo() {
+struct InstanceInfo new_InstanceInfo() {
 	struct InstanceInfo info;
 	vkEnumerateInstanceLayerProperties(&info.layerCount, NULL);
 	vkEnumerateInstanceExtensionProperties(NULL, &info.extensionCount, NULL);
@@ -279,7 +279,7 @@ struct InstanceInfo getInstanceInfo() {
 	/* check if not null */
 	if (!info.ppExtensionNames || !info.ppLayerNames || !pLayerProperties
 			|| !pExtensionProperties) {
-		printError(errno);
+		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 		hardExit();
 	}
 
@@ -288,7 +288,7 @@ struct InstanceInfo getInstanceInfo() {
 		info.ppLayerNames[i] = malloc(
 				VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
 		if (!info.ppLayerNames[i]) {
-			printError(errno);
+			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 			hardExit();
 		}
 		strncpy(info.ppLayerNames[i], pLayerProperties[i].layerName,
@@ -298,7 +298,7 @@ struct InstanceInfo getInstanceInfo() {
 		info.ppExtensionNames[i] = malloc(
 				VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
 		if (!info.ppExtensionNames[i]) {
-			printError(errno);
+			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 			hardExit();
 		}
 		strncpy(info.ppExtensionNames[i], pExtensionProperties[i].extensionName,
@@ -310,7 +310,7 @@ struct InstanceInfo getInstanceInfo() {
 }
 
 
-void destroyInstanceInfo(struct InstanceInfo instanceInfo) {
+void delete_InstanceInfo(struct InstanceInfo instanceInfo) {
 	for (uint32_t i = 0; i < instanceInfo.extensionCount; i++) {
 		free(instanceInfo.ppExtensionNames[i]);
 	}
@@ -323,7 +323,7 @@ void destroyInstanceInfo(struct InstanceInfo instanceInfo) {
 }
 
 
-struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
+struct DeviceInfo new_DeviceInfo(VkPhysicalDevice physicalDevice)
 {
 	/* Instantiate DeviceInfo */
 	struct DeviceInfo info;
@@ -347,7 +347,7 @@ struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 
 	if (!info.ppExtensionNames || !info.ppLayerNames || !pLayerProperties
 			|| !pExtensionProperties) {
-		printError(errno);
+		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 		hardExit();
 	}
 
@@ -363,7 +363,7 @@ struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 		info.ppLayerNames[i] = malloc(
 		VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
 		if (!info.ppLayerNames[i]) {
-			printError(errno);
+			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 			hardExit();
 		}
 		strncpy(info.ppLayerNames[i], pLayerProperties[i].layerName,
@@ -373,7 +373,7 @@ struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 		info.ppExtensionNames[i] = malloc(
 		VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
 		if (!info.ppExtensionNames[i]) {
-			printError(errno);
+			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 			hardExit();
 		}
 		strncpy(info.ppExtensionNames[i], pExtensionProperties[i].extensionName,
@@ -385,7 +385,7 @@ struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 }
 
 
-void destroyDeviceInfo(struct DeviceInfo deviceInfo) {
+void delete_DeviceInfo(struct DeviceInfo deviceInfo) {
 	for (uint32_t i = 0; i < deviceInfo.extensionCount; i++) {
 		free(deviceInfo.ppExtensionNames[i]);
 	}
@@ -397,7 +397,7 @@ void destroyDeviceInfo(struct DeviceInfo deviceInfo) {
 	free(deviceInfo.ppLayerNames);
 }
 
-VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
+VkDevice new_LogicalDevice(struct DeviceInfo deviceInfo,
 		VkPhysicalDevice physicalDevice,
 		uint32_t deviceQueueIndex,
 		uint32_t enabledExtensionCount,
@@ -458,13 +458,13 @@ VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
 	return (device);
 }
 
-VkQueue createQueue(VkDevice device, uint32_t deviceQueueIndex) {
+VkQueue getQueue(VkDevice device, uint32_t deviceQueueIndex) {
 	VkQueue queue;
 	vkGetDeviceQueue(device, deviceQueueIndex, 0, &queue);
 	return (queue);
 }
 
-VkSwapchainKHR createSwapChain(VkSwapchainKHR oldSwapChain,
+VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
 		VkDevice device,
 		VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface, VkExtent2D extent,
@@ -520,7 +520,7 @@ VkSwapchainKHR createSwapChain(VkSwapchainKHR oldSwapChain,
 	return (swapChain);
 }
 
-void destroySwapChain(VkDevice device, VkSwapchainKHR swapChain) {
+void delete_SwapChain(VkDevice device, VkSwapchainKHR swapChain) {
 	vkDestroySwapchainKHR(device, swapChain, NULL);
 }
 
@@ -529,7 +529,7 @@ void getSwapChainImages(VkDevice device, VkSwapchainKHR swapChain,
 	vkGetSwapchainImagesKHR(device, swapChain, imageCount, NULL);
 	VkImage* tmp = realloc(images, (*imageCount) * sizeof(VkImage));
 	if (!tmp) {
-		printError(errno);
+		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 		hardExit();
 	} else {
 		images = tmp;

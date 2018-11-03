@@ -20,7 +20,7 @@
  */
 struct DeviceInfo {
 	/* all arrays will be malloc'ed and freed */
-	/* at getDeviceInfo and destroyDeviceInfo, respectively */
+	/* at new_DeviceInfo and delete_DeviceInfo, respectively */
 	VkPhysicalDeviceProperties deviceProperties;
 	VkPhysicalDeviceFeatures deviceFeatures;
 	uint32_t extensionCount;
@@ -36,6 +36,13 @@ struct InstanceInfo {
 	char** ppLayerNames;
 };
 
+struct SwapChainInfo {
+	VkSurfaceCapabilitiesKHR surfaceCapabilities;
+	VkSurfaceFormatKHR* pFormats;
+	VkPresentModeKHR* pPresentModes;
+};
+
+
 /**
  * Queue family indices
  */
@@ -48,28 +55,33 @@ struct DeviceIndices {
 	bool hasPresent;
 };
 
-struct InstanceInfo getInstanceInfo();
-void destroyInstanceInfo(struct InstanceInfo instanceInfo);
+struct InstanceInfo new_InstanceInfo();
+void delete_InstanceInfo(struct InstanceInfo instanceInfo);
 
-VkInstance createInstance(struct InstanceInfo instanceInfo,
+struct DeviceInfo new_DeviceInfo(VkPhysicalDevice device);
+void delete_DeviceInfo(struct DeviceInfo deviceInfo);
+
+struct SwapChainInfo new_SwapChainInfo(VkPhysicalDevice device,
+		VkSurfaceKHR surface);
+void delete_SwapChainInfo(struct SwapChainInfo swapChainInfo);
+
+VkInstance new_Instance(struct InstanceInfo instanceInfo,
 		uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
 		uint32_t enabledLayerCount,
 		const char *const *ppEnabledLayerNames);
 
 
-void destroyInstance(VkInstance instance);
+void delete_Instance(VkInstance instance);
 
-VkDebugUtilsMessengerEXT createDebugCallback(VkInstance instance);
+VkDebugUtilsMessengerEXT new_DebugCallback(VkInstance instance);
 
-void destroyDebugCallback(VkInstance instance,
+void delete_DebugCallback(VkInstance instance,
 		VkDebugUtilsMessengerEXT callback);
 
-VkPhysicalDevice createPhysicalDevice(VkInstance instance);
+VkPhysicalDevice getPhysicalDevice(VkInstance instance);
 
-struct DeviceInfo getDeviceInfo(VkPhysicalDevice);
-void destroyDeviceInfo(struct DeviceInfo deviceInfo);
-VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
+VkDevice new_LogicalDevice(struct DeviceInfo deviceInfo,
 		VkPhysicalDevice physicalDevice,
 		uint32_t deviceQueueIndex,
 		uint32_t enabledExtensionCount,
@@ -77,7 +89,7 @@ VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
 		uint32_t enabledLayerCount,
 		const char *const *ppEnabledLayerNames);
 
-void destroyDevice(VkDevice device);
+void delete_Device(VkDevice device);
 
 struct DeviceIndices getDeviceIndices(VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface);
@@ -85,14 +97,14 @@ struct DeviceIndices getDeviceIndices(VkPhysicalDevice physicalDevice,
 int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit);
 int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface);
 
-VkQueue createQueue(VkDevice device, uint32_t deviceQueueIndex);
+VkQueue getQueue(VkDevice device, uint32_t deviceQueueIndex);
 
-VkSwapchainKHR createSwapChain(VkSwapchainKHR oldSwapChain, VkDevice device,
+VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain, VkDevice device,
 		VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface, VkExtent2D extent,
 		struct DeviceIndices deviceIndices);
 
-void destroySwapChain(VkDevice device, VkSwapchainKHR swapChain);
+void delete_SwapChain(VkDevice device, VkSwapchainKHR swapChain);
 
 void getSwapChainImages(VkDevice device, VkSwapchainKHR swapChain,
 		uint32_t *imageCount, VkImage *images);

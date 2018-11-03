@@ -13,10 +13,6 @@
 #include "constants.h"
 #include "error_methods.h"
 
-void printError(int errnum) {
-	errLog(ERROR, strerror(errnum));
-}
-
 void errLog(int level, const char* message, ...) {
 	char* errmsg;
 	FILE* out;

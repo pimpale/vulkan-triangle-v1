@@ -36,7 +36,7 @@ int main(void) {
 		ppExtensionNames = malloc(sizeof(char *) * extensionCount);
 
 		if (!ppExtensionNames) {
-			printError(errno);
+			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 			hardExit();
 		}
 
@@ -49,15 +49,15 @@ int main(void) {
 
 
 	/*get instance info */
-	struct InstanceInfo instanceInfo = getInstanceInfo();
+	struct InstanceInfo instanceInfo = new_InstanceInfo();
 
 	/* Create instance */
-	VkInstance instance = createInstance(instanceInfo, extensionCount,
+	VkInstance instance = new_Instance(instanceInfo, extensionCount,
 			ppExtensionNames, layerCount, ppLayerNames);
-	VkDebugUtilsMessengerEXT callback = createDebugCallback(instance);
+	VkDebugUtilsMessengerEXT callback = new_DebugCallback(instance);
 
-	VkPhysicalDevice physicalDevice = createPhysicalDevice(instance);
-	struct DeviceInfo deviceInfo = getDeviceInfo(physicalDevice);
+	VkPhysicalDevice physicalDevice = getPhysicalDevice(instance);
+	struct DeviceInfo deviceInfo = new_DeviceInfo(physicalDevice);
 
 
 	/* Create window and surface */
@@ -73,17 +73,17 @@ int main(void) {
 		errLog(FATAL, "unable to acquire indices\n");
 	}
 	/*create device */
-	VkDevice device = createLogicalDevice(deviceInfo, physicalDevice,
+	VkDevice device = new_LogicalDevice(deviceInfo, physicalDevice,
 			deviceIndices.graphicsIndex, deviceExtensionCount,
 			ppDeviceExtensionNames, layerCount, ppLayerNames);
 
 	/* create queues */
-	VkQueue graphicsQueue = createQueue(device, deviceIndices.graphicsIndex);
-	VkQueue presentQueue = createQueue(device, deviceIndices.presentIndex);
+	VkQueue graphicsQueue = getQueue(device, deviceIndices.graphicsIndex);
+	VkQueue presentQueue = getQueue(device, deviceIndices.presentIndex);
 
 	/*Create swap chain */
 	VkSwapchainKHR
-	swapChain = createSwapChain(VK_NULL_HANDLE,
+	swapChain = new_SwapChain(VK_NULL_HANDLE,
 			device,
 			physicalDevice,
 			surface,
@@ -99,12 +99,12 @@ int main(void) {
 	}
 
 	/*cleanup*/
-	destroySwapChain(device, swapChain);
-	destroyDevice(device);
-	destroyDeviceInfo(deviceInfo);
-	destroyDebugCallback(instance, callback);
-	destroyInstance(instance);
-	destroyInstanceInfo(instanceInfo);
+	delete_SwapChain(device, swapChain);
+	delete_Device(device);
+	delete_DeviceInfo(deviceInfo);
+	delete_DebugCallback(instance, callback);
+	delete_Instance(instance);
+	delete_InstanceInfo(instanceInfo);
 	free(ppExtensionNames);
 	glfwTerminate();
 	return (EXIT_SUCCESS);
