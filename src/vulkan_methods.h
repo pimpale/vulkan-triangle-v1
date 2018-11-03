@@ -38,7 +38,9 @@ struct InstanceInfo {
 
 struct SwapChainInfo {
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
+	uint32_t formatCount;
 	VkSurfaceFormatKHR* pFormats;
+	uint32_t presentModeCount;
 	VkPresentModeKHR* pPresentModes;
 };
 
@@ -58,10 +60,10 @@ struct DeviceIndices {
 struct InstanceInfo new_InstanceInfo();
 void delete_InstanceInfo(struct InstanceInfo instanceInfo);
 
-struct DeviceInfo new_DeviceInfo(VkPhysicalDevice device);
+struct DeviceInfo new_DeviceInfo(VkPhysicalDevice physicalDevice);
 void delete_DeviceInfo(struct DeviceInfo deviceInfo);
 
-struct SwapChainInfo new_SwapChainInfo(VkPhysicalDevice device,
+struct SwapChainInfo new_SwapChainInfo(VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface);
 void delete_SwapChainInfo(struct SwapChainInfo swapChainInfo);
 
@@ -99,8 +101,9 @@ int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface);
 
 VkQueue getQueue(VkDevice device, uint32_t deviceQueueIndex);
 
-VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain, VkDevice device,
-		VkPhysicalDevice physicalDevice,
+VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
+		struct SwapChainInfo swapChainInfo,
+		VkDevice device,
 		VkSurfaceKHR surface, VkExtent2D extent,
 		struct DeviceIndices deviceIndices);
 

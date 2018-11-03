@@ -14,7 +14,7 @@
 GLFWwindow *createGlfwWindow() {
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  return glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", NULL, NULL);
+	return (glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", NULL, NULL));
 }
 
 VkSurfaceKHR createSurface(GLFWwindow *window, VkInstance instance) {
@@ -24,5 +24,5 @@ VkSurfaceKHR createSurface(GLFWwindow *window, VkInstance instance) {
     fprintf(stderr, "failed to create surface, quitting\n");
     hardExit();
   }
-  return surface;
+	return (surface);
 }

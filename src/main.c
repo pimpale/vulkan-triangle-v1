@@ -46,8 +46,6 @@ int main(void) {
 		}
 	}
 
-
-
 	/*get instance info */
 	struct InstanceInfo instanceInfo = new_InstanceInfo();
 
@@ -72,10 +70,15 @@ int main(void) {
 			&& deviceIndices.hasPresent)) {
 		errLog(FATAL, "unable to acquire indices\n");
 	}
+
 	/*create device */
 	VkDevice device = new_LogicalDevice(deviceInfo, physicalDevice,
 			deviceIndices.graphicsIndex, deviceExtensionCount,
 			ppDeviceExtensionNames, layerCount, ppLayerNames);
+
+	/* get swap chain details */
+	struct SwapChainInfo swapChainInfo = new_SwapChainInfo(physicalDevice,
+			surface);
 
 	/* create queues */
 	VkQueue graphicsQueue = getQueue(device, deviceIndices.graphicsIndex);
@@ -84,8 +87,8 @@ int main(void) {
 	/*Create swap chain */
 	VkSwapchainKHR
 	swapChain = new_SwapChain(VK_NULL_HANDLE,
+			swapChainInfo,
 			device,
-			physicalDevice,
 			surface,
 			(VkExtent2D ) { WINDOW_WIDTH, WINDOW_HEIGHT },
 			deviceIndices);

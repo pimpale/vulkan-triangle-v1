@@ -464,25 +464,47 @@ VkQueue getQueue(VkDevice device, uint32_t deviceQueueIndex) {
 	return (queue);
 }
 
+VkSurfaceFormatKHR chooseSwapSurfaceFormat(struct SwapChainInfo swapChainInfo) {
+	VkSurfaceFormatKHR format = { 0 };
+
+	if (swapChainInfo.formatCount == 1
+			&& swapChainInfo.pFormats[0].format == VK_FORMAT_UNDEFINED) {
+		/* If it has no preference */
+		format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+		format.format = VK_FORMAT_B8G8R8A8_UNORM;
+	} else if (swapChainInfo.formatCount != 0) {
+		/* first one in list */
+		format = swapChainInfo.pFormats[0];
+	} else if (swapChainInfo.formatCount == 0) {
+		errLog(ERROR, "no formats available");
+	}
+
+	for (int i = 0; i < swapChainInfo.formatCount; i++) {
+		VkSurfaceFormatKHR availableFormat = swapChainInfo.pFormats[i];
+		if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM
+				&& availableFormat.colorSpace
+						== VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+			format = availableFormat;
+		}
+	}
+
+	return (format);
+}
+
 VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
+		struct SwapChainInfo swapChainInfo,
 		VkDevice device,
-		VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface, VkExtent2D extent,
 		struct DeviceIndices deviceIndices) {
 
 	VkSwapchainKHR swapChain;
-	VkSurfaceCapabilitiesKHR capabilities;
-
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
-			&capabilities);
-
+	VkSurfaceFormatKHR format = chooseSwapSurfaceFormat(swapChainInfo);
 	VkSwapchainCreateInfoKHR createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = surface;
-
 	createInfo.minImageCount = 2;
-	createInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
-	createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; /* TODO what if this fails (but good enough for now) */
+	createInfo.imageFormat = format.format;
+	createInfo.imageColorSpace = format.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -503,9 +525,10 @@ VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
 		createInfo.pQueueFamilyIndices = NULL; /* Optional */
 	}
 
-	createInfo.preTransform = capabilities.currentTransform;
+	createInfo.preTransform =
+			swapChainInfo.surfaceCapabilities.currentTransform;
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-	createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+	createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR; /* guaranteed to be available */
 	createInfo.clipped = VK_TRUE;
 
 	createInfo.oldSwapchain = oldSwapChain;
@@ -522,6 +545,49 @@ VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
 
 void delete_SwapChain(VkDevice device, VkSwapchainKHR swapChain) {
 	vkDestroySwapchainKHR(device, swapChain, NULL);
+}
+
+struct SwapChainInfo new_SwapChainInfo(VkPhysicalDevice physicalDevice,
+		VkSurfaceKHR surface) {
+	struct SwapChainInfo info;
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
+			&info.surfaceCapabilities);
+
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface,
+			&info.formatCount, NULL);
+	if (info.formatCount != 0) {
+		info.pFormats = malloc(info.formatCount * sizeof(VkSurfaceFormatKHR));
+		if (!info.pFormats) {
+			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
+			hardExit();
+		}
+		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface,
+				&info.formatCount, info.pFormats);
+	} else {
+		info.pFormats = NULL;
+	}
+
+	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface,
+			&info.presentModeCount, NULL);
+	if (info.presentModeCount != 0) {
+		info.pPresentModes = malloc(
+				info.presentModeCount * sizeof(VkPresentModeKHR));
+		if (!info.pPresentModes) {
+			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
+			hardExit();
+		}
+		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface,
+				&info.presentModeCount, info.pPresentModes);
+	} else {
+		info.pPresentModes = NULL;
+	}
+
+	return (info);
+}
+
+void delete_SwapChainInfo(struct SwapChainInfo swapChainInfo) {
+	free(swapChainInfo.pFormats);
+	free(swapChainInfo.pPresentModes);
 }
 
 void getSwapChainImages(VkDevice device, VkSwapchainKHR swapChain,

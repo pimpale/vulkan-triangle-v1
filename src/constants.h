@@ -8,7 +8,7 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-#define APPNAME "vulkan rotating cube"
+#define APPNAME "VRC"
 #define DEBUG 1
 
 #define MAX_PRINT_LENGTH 4096
