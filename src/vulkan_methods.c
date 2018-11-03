@@ -18,16 +18,31 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
 		void *pUserData) {
 
-	FILE *out;
-	if (messageSeverity > VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
-		out = stderr;
+	/* set severity */
+	uint32_t errcode;
+	switch (messageSeverity) {
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT:
+		errcode = INFO;
+		break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT:
+		errcode = INFO;
+		break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT:
+		errcode = WARN;
+		break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT:
+		errcode = ERROR;
+		break;
+	case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
+		errcode = UNKNOWN;
+		break;
+	default:
+		errcode = UNKNOWN;
+		break;
 	}
-	else {
-		out = stdout;
-	}
-
-	fprintf(out, "%s: Vulkan Callback: %s\n", APPNAME, pCallbackData->pMessage);
-	return VK_FALSE;
+	/* log error */
+	errLog(errcode, "Vulkan validation layer: %s\n", pCallbackData->pMessage);
+	return (VK_FALSE);
 }
 
 VkInstance createInstance(struct InstanceInfo instanceInfo,
@@ -36,7 +51,7 @@ VkInstance createInstance(struct InstanceInfo instanceInfo,
 		uint32_t enabledLayerCount,
 		const char *const *ppEnabledLayerNames) {
 
-	// check layers and extensions
+	/* check layers and extensions */
 	{
 		uint32_t matchnum = 0;
 		findMatchingStrings((const char* const *) instanceInfo.ppExtensionNames,
@@ -58,7 +73,7 @@ VkInstance createInstance(struct InstanceInfo instanceInfo,
 			hardExit();
 		}
 	}
-	// Create app info
+	/* Create app info */
 	VkApplicationInfo appInfo = {0};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = APPNAME;
@@ -67,7 +82,7 @@ VkInstance createInstance(struct InstanceInfo instanceInfo,
 	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.apiVersion = VK_API_VERSION_1_0;
 
-	// Create info
+	/* Create info */
 	VkInstanceCreateInfo createInfo = {0};
 	createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	createInfo.pApplicationInfo = &appInfo;
@@ -79,10 +94,11 @@ VkInstance createInstance(struct InstanceInfo instanceInfo,
 	VkInstance instance = {0};
 	VkResult result = vkCreateInstance(&createInfo, NULL, &instance);
 	if (result != VK_SUCCESS) {
-		printVulkanError(result);
+		errLog(ERROR, "Failed to create instance, error code: %d",
+				(uint32_t) result);
 		hardExit();
 	}
-	return instance;
+	return (instance);
 }
 
 void destroyInstance(VkInstance instance) { vkDestroyInstance(instance, NULL); }
@@ -103,7 +119,7 @@ VkDebugUtilsMessengerEXT createDebugCallback(VkInstance instance) {
 
 	VkDebugUtilsMessengerEXT callback = {0};
 
-	// Returns a function pointer
+	/* Returns a function pointer */
 	PFN_vkCreateDebugUtilsMessengerEXT func =
 			(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
 					instance, "vkCreateDebugUtilsMessengerEXT");
@@ -113,10 +129,11 @@ VkDebugUtilsMessengerEXT createDebugCallback(VkInstance instance) {
 	}
 	VkResult result = func(instance, &createInfo, NULL, &callback);
 	if (result != VK_SUCCESS) {
-		printVulkanError(result);
+		errLog(ERROR, "Failed to create debug callback, error code: %d",
+				(uint32_t) result);
 		hardExit();
 	}
-	return callback;
+	return (callback);
 }
 
 /**
@@ -163,7 +180,7 @@ VkPhysicalDevice createPhysicalDevice(VkInstance instance) {
 	}
 
 	free(arr);
-	return selectedDevice;
+	return (selectedDevice);
 }
 
 void destroyDevice(VkDevice device) { vkDestroyDevice(device, NULL); }
@@ -181,11 +198,11 @@ int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit) {
 	for (uint32_t i = 0; i < queueFamilyCount; i++) {
 		if (arr[i].queueCount > 0 && (arr[0].queueFlags & bit)) {
 			free(arr);
-			return i;
+			return (i);
 		}
 	}
 	free(arr);
-	return -1;
+	return (-1);
 }
 
 int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface) {
@@ -202,18 +219,18 @@ int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface) {
 		VkBool32 surfaceSupport = false;
 		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &surfaceSupport);
 		if (surfaceSupport) {
-			return i;
+			return (i);
 		}
 	}
 	free(arr);
-	return -1;
+	return (-1);
 }
 
-struct DeviceIndices getDeviceIndices(VkPhysicalDevice device,
+struct DeviceIndices getDeviceIndices(VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface) {
 	struct DeviceIndices deviceIndices = { 0 };
 
-	int32_t tmp = getDeviceQueueIndex(device, VK_QUEUE_GRAPHICS_BIT);
+	int32_t tmp = getDeviceQueueIndex(physicalDevice, VK_QUEUE_GRAPHICS_BIT);
 	if (tmp != -1) {
 		deviceIndices.hasGraphics = true;
 		deviceIndices.graphicsIndex = (uint32_t) tmp;
@@ -221,7 +238,7 @@ struct DeviceIndices getDeviceIndices(VkPhysicalDevice device,
 		deviceIndices.hasGraphics = false;
 	}
 
-	int32_t tmp = getDeviceQueueIndex(device, VK_QUEUE_COMPUTE_BIT);
+	tmp = getDeviceQueueIndex(physicalDevice, VK_QUEUE_COMPUTE_BIT);
 	if (tmp != -1) {
 		deviceIndices.hasCompute = true;
 		deviceIndices.computeIndex = (uint32_t) tmp;
@@ -231,13 +248,13 @@ struct DeviceIndices getDeviceIndices(VkPhysicalDevice device,
 
 	deviceIndices.hasPresent = false;
 	if (surface != VK_NULL_HANDLE) {
-		tmp = getPresentQueueIndex(device, surface);
+		tmp = getPresentQueueIndex(physicalDevice, surface);
 		if (tmp != -1) {
 			deviceIndices.hasPresent = true;
 			deviceIndices.presentIndex = (uint32_t) tmp;
 		}
 	}
-	return deviceIndices;
+	return (deviceIndices);
 }
 
 struct InstanceInfo getInstanceInfo() {
@@ -246,7 +263,7 @@ struct InstanceInfo getInstanceInfo() {
 	vkEnumerateInstanceExtensionProperties(NULL, &info.extensionCount, NULL);
 
 
-	//alloc number dependent info
+	/* alloc number dependent info */
 	info.ppLayerNames = malloc(info.layerCount * sizeof(char*));
 	info.ppExtensionNames = malloc(info.extensionCount * sizeof(char*));
 	VkLayerProperties* pLayerProperties = malloc(
@@ -254,19 +271,19 @@ struct InstanceInfo getInstanceInfo() {
 	VkExtensionProperties* pExtensionProperties = malloc(
 			info.extensionCount * sizeof(VkExtensionProperties));
 
-	//enumerate
+	/* enumerate */
 	vkEnumerateInstanceLayerProperties(&info.layerCount, pLayerProperties);
 	vkEnumerateInstanceExtensionProperties(NULL, &info.extensionCount,
 			pExtensionProperties);
 
-	//check if not null
+	/* check if not null */
 	if (!info.ppExtensionNames || !info.ppLayerNames || !pLayerProperties
 			|| !pExtensionProperties) {
 		printError(errno);
 		hardExit();
 	}
 
-	//copy names to info
+	/* copy names to info */
 	for (uint32_t i = 0; i < info.layerCount; i++) {
 		info.ppLayerNames[i] = malloc(
 				VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
@@ -289,7 +306,7 @@ struct InstanceInfo getInstanceInfo() {
 	}
 	free(pLayerProperties);
 	free(pExtensionProperties);
-	return info;
+	return (info);
 }
 
 
@@ -308,19 +325,19 @@ void destroyInstanceInfo(struct InstanceInfo instanceInfo) {
 
 struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 {
-	//Instantiate DeviceInfo
+	/* Instantiate DeviceInfo */
 	struct DeviceInfo info;
-	//Set device properties and features
+	/* Set device properties and features */
 	vkGetPhysicalDeviceProperties(physicalDevice, &info.deviceProperties);
 	vkGetPhysicalDeviceFeatures(physicalDevice, &info.deviceFeatures);
 
-	//set extension and layer counts
+	/* set extension and layer counts */
 	vkEnumerateDeviceLayerProperties(physicalDevice, &info.layerCount,
 			NULL);
 	vkEnumerateDeviceExtensionProperties(physicalDevice, NULL,
 			&info.extensionCount, NULL);
 
-	//alloc count dependent info
+	/* alloc count dependent info */
 	info.ppLayerNames = malloc(info.layerCount * sizeof(char*));
 	info.ppExtensionNames = malloc(info.extensionCount * sizeof(char*));
 	VkLayerProperties* pLayerProperties = malloc(
@@ -334,14 +351,14 @@ struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 		hardExit();
 	}
 
-	//grab values
+	/* grab values */
 	vkEnumerateDeviceLayerProperties(physicalDevice, &info.layerCount,
 			pLayerProperties);
 	vkEnumerateDeviceExtensionProperties(physicalDevice, NULL,
 			&info.extensionCount,
 			pExtensionProperties);
 
-	//copy names to info, mallocing as we go.
+	/* copy names to info, mallocing as we go. */
 	for (uint32_t i = 0; i < info.layerCount; i++) {
 		info.ppLayerNames[i] = malloc(
 		VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
@@ -364,20 +381,20 @@ struct DeviceInfo getDeviceInfo(VkPhysicalDevice physicalDevice)
 	}
 	free(pLayerProperties);
 	free(pExtensionProperties);
-	return info;
+	return (info);
 }
 
 
-void destroyDeviceInfo(struct DeviceInfo info) {
-	for (uint32_t i = 0; i < info.extensionCount; i++) {
-		free(info.ppExtensionNames[i]);
+void destroyDeviceInfo(struct DeviceInfo deviceInfo) {
+	for (uint32_t i = 0; i < deviceInfo.extensionCount; i++) {
+		free(deviceInfo.ppExtensionNames[i]);
 	}
-	free(info.ppExtensionNames);
+	free(deviceInfo.ppExtensionNames);
 
-	for (uint32_t i = 0; i < info.layerCount; i++) {
-		free(info.ppLayerNames[i]);
+	for (uint32_t i = 0; i < deviceInfo.layerCount; i++) {
+		free(deviceInfo.ppLayerNames[i]);
 	}
-	free(info.ppLayerNames);
+	free(deviceInfo.ppLayerNames);
 }
 
 VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
@@ -388,7 +405,7 @@ VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
 		uint32_t enabledLayerCount,
 		const char *const *ppEnabledLayerNames) {
 
-	//check layers and extensions
+	/* check layers and extensions */
 	{
 		uint32_t matchnum = 0;
 		findMatchingStrings((const char* const *) deviceInfo.ppExtensionNames,
@@ -433,17 +450,18 @@ VkDevice createLogicalDevice(struct DeviceInfo deviceInfo,
 	VkDevice device;
 	VkResult res = vkCreateDevice(physicalDevice, &createInfo, NULL, &device);
 	if (res != VK_SUCCESS) {
-		printVulkanError(res);
+		errLog(ERROR, "Failed to create device, error code: %d",
+				(uint32_t) res);
 		hardExit();
 	}
 
-	return device;
+	return (device);
 }
 
 VkQueue createQueue(VkDevice device, uint32_t deviceQueueIndex) {
 	VkQueue queue;
 	vkGetDeviceQueue(device, deviceQueueIndex, 0, &queue);
-	return queue;
+	return (queue);
 }
 
 VkSwapchainKHR createSwapChain(VkSwapchainKHR oldSwapChain,
@@ -464,7 +482,7 @@ VkSwapchainKHR createSwapChain(VkSwapchainKHR oldSwapChain,
 
 	createInfo.minImageCount = 2;
 	createInfo.imageFormat = VK_FORMAT_B8G8R8A8_UNORM;
-	createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; //TODO what if this fails (but good enough for now)
+	createInfo.imageColorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR; /* TODO what if this fails (but good enough for now) */
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -481,8 +499,8 @@ VkSwapchainKHR createSwapChain(VkSwapchainKHR oldSwapChain,
 		createInfo.pQueueFamilyIndices = queueFamilyIndices;
 	} else {
 		createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		createInfo.queueFamilyIndexCount = 0; // Optional
-		createInfo.pQueueFamilyIndices = NULL; // Optional
+		createInfo.queueFamilyIndexCount = 0; /* Optional */
+		createInfo.pQueueFamilyIndices = NULL; /* Optional */
 	}
 
 	createInfo.preTransform = capabilities.currentTransform;
@@ -494,11 +512,12 @@ VkSwapchainKHR createSwapChain(VkSwapchainKHR oldSwapChain,
 
 	VkResult res = vkCreateSwapchainKHR(device, &createInfo, NULL, &swapChain);
 	if (res != VK_SUCCESS) {
-		printVulkanError(res);
+		errLog(ERROR, "Failed to create swap chain, error code: %d",
+				(uint32_t) res);
 		hardExit();
 	}
 
-	return swapChain;
+	return (swapChain);
 }
 
 void destroySwapChain(VkDevice device, VkSwapchainKHR swapChain) {

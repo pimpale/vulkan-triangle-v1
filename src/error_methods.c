@@ -9,28 +9,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <vulkan/vulkan.h>
-
+#include <stdarg.h>
 #include "constants.h"
-
 #include "error_methods.h"
-
-
-
-void printVulkanError(VkResult error) {
-	char buf[MAX_PRINT_LENGTH];
-	if (error != VK_SUCCESS) {
-		char* buf = snprintf(buf, MAX_PRINT_LENGTH, "Vulkan error: %i\n",
-				(int) error);
-		errLog(ERROR, buf);
-	}
-}
 
 void printError(int errnum) {
 	errLog(ERROR, strerror(errnum));
 }
 
-void errLog(int level, const char* msg) {
+void errLog(int level, const char* message, ...) {
 	char* errmsg;
 	FILE* out;
 
@@ -67,7 +54,13 @@ void errLog(int level, const char* msg) {
 	}
 	}
 
-	fprintf(out, "%s: %s: %s", APPNAME, errmsg, msg);
+	char message_formatted[MAX_PRINT_LENGTH];
+	va_list args;
+	va_start(args, message);
+	vsnprintf(message_formatted, MAX_PRINT_LENGTH, message, args);
+	va_end(args);
+
+	fprintf(out, "%s: %s: %s", APPNAME, errmsg, message_formatted);
 }
 
 void hardExit() { exit(EXIT_FAILURE); }

@@ -19,8 +19,8 @@
  * device so that it doesn't have to continuously be fetched
  */
 struct DeviceInfo {
-	//all arrays will be malloc'ed and freed
-	//at getDeviceInfo and destroyDeviceInfo, respectively
+	/* all arrays will be malloc'ed and freed */
+	/* at getDeviceInfo and destroyDeviceInfo, respectively */
 	VkPhysicalDeviceProperties deviceProperties;
 	VkPhysicalDeviceFeatures deviceFeatures;
 	uint32_t extensionCount;

@@ -16,7 +16,7 @@
 int main(void) {
 	glfwInit();
 
-	//Extensions, Layers, and Device Extensions declared (some initialized
+	/* Extensions, Layers, and Device Extensions declared (some initialized) */
 	uint32_t extensionCount;
 	const char **ppExtensionNames;
 	uint32_t layerCount = 1;
@@ -24,10 +24,10 @@ int main(void) {
 	uint32_t deviceExtensionCount = 1;
 	const char *ppDeviceExtensionNames[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-	//set other uninitialized stuff
+	/* set other uninitialized stuff */
 	{
-		// define our own extensions
-		// get glfw extensions to use
+		/* define our own extensions */
+		/* get glfw extensions to use */
 		uint32_t glfwExtensionCount = 0;
 		const char **ppGlfwExtensionNames = glfwGetRequiredInstanceExtensions(
 				&glfwExtensionCount);
@@ -48,10 +48,10 @@ int main(void) {
 
 
 
-	//get instance info
+	/*get instance info */
 	struct InstanceInfo instanceInfo = getInstanceInfo();
 
-	// Create instance
+	/* Create instance */
 	VkInstance instance = createInstance(instanceInfo, extensionCount,
 			ppExtensionNames, layerCount, ppLayerNames);
 	VkDebugUtilsMessengerEXT callback = createDebugCallback(instance);
@@ -60,28 +60,28 @@ int main(void) {
 	struct DeviceInfo deviceInfo = getDeviceInfo(physicalDevice);
 
 
-	// Create window and surface
+	/* Create window and surface */
 	GLFWwindow *pWindow = createGlfwWindow();
 	VkSurfaceKHR surface = createSurface(pWindow, instance);
 
-	// find queues on graphics device
+	/* find queues on graphics device */
 	struct DeviceIndices deviceIndices = getDeviceIndices(physicalDevice,
 			surface);
-	//fail if our required indices are not present
-	if (!deviceIndices.hasGraphics || !deviceIndices.hasPresent
-			|| !deviceIndices.hasPresent) {
+	/*fail if our required indices are not present */
+	if (!(deviceIndices.hasGraphics && deviceIndices.hasCompute
+			&& deviceIndices.hasPresent)) {
 		errLog(FATAL, "unable to acquire indices\n");
 	}
-	//create device
+	/*create device */
 	VkDevice device = createLogicalDevice(deviceInfo, physicalDevice,
 			deviceIndices.graphicsIndex, deviceExtensionCount,
 			ppDeviceExtensionNames, layerCount, ppLayerNames);
 
-	// create queues
+	/* create queues */
 	VkQueue graphicsQueue = createQueue(device, deviceIndices.graphicsIndex);
 	VkQueue presentQueue = createQueue(device, deviceIndices.presentIndex);
 
-	//Create swap chain
+	/*Create swap chain */
 	VkSwapchainKHR
 	swapChain = createSwapChain(VK_NULL_HANDLE,
 			device,
@@ -93,12 +93,12 @@ int main(void) {
 
 
 
-	//wait till close
+	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {
 		glfwPollEvents();
 	}
 
-	//cleanup
+	/*cleanup*/
 	destroySwapChain(device, swapChain);
 	destroyDevice(device);
 	destroyDeviceInfo(deviceInfo);
@@ -107,5 +107,5 @@ int main(void) {
 	destroyInstanceInfo(instanceInfo);
 	free(ppExtensionNames);
 	glfwTerminate();
-	return EXIT_SUCCESS;
+	return (EXIT_SUCCESS);
 }

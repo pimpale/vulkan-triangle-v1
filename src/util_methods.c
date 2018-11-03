@@ -26,8 +26,8 @@
 void concatArray(void *src1, uint32_t len1, void *src2, uint32_t len2,
                  void *dest, uint32_t destlen) {
   assert(src1 != NULL && src2 != NULL && dest != NULL);
-  memmove(dest, src1, len1);
-  memmove(dest + len1, src2, len2);
+	memmove((uint8_t*) dest, src1, len1);
+	memmove((uint8_t*) dest + len1, src2, len2);
 }
 
 /* Preconditions: neither ppData nor ppQuery may be null.
@@ -59,7 +59,7 @@ void findMatchingStrings(const char *const *ppData, uint32_t dataLen,
                          uint32_t *pMatches) {
   assert(ppQuery != NULL && ppData != NULL && pMatches != NULL);
 
-  // to fill the ppResults value out
+	/*to fill the ppResults value out*/
   bool fillResults = ppResult != NULL;
 
   *pMatches = 0;

@@ -13,22 +13,21 @@
 #define WARN 3
 #define ERROR 4
 #define FATAL 5
+#define UNKNOWN 6
 
 #define DEBUG_MSG "DEBUG"
 #define INFO_MSG "INFO"
 #define WARN_MSG "WARN"
 #define ERROR_MSG "ERROR"
 #define FATAL_MSG "FATAL"
-
-
+#define UNKNOWN_MSG "UNKNOWN_SEVERITY"
 
 /**
  * Prints a null terminated string to stderr
  */
 void printError(int errnum);
-void printVulkanError(VkResult err);
 
-void errLog(int level, const char* message);
+void errLog(int level, const char* message, ...);
 
 void hardExit();
 
