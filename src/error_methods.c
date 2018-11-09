@@ -59,4 +59,4 @@ void errLog(int level, const char* message, ...) {
 	fprintf(out, "%s: %s: %s", APPNAME, errmsg, message_formatted);
 }
 
-void hardExit() { exit(EXIT_FAILURE); }
+void panic() { exit(EXIT_FAILURE); }

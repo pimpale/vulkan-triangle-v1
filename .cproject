@@ -16,7 +16,7 @@
 					<folderInfo id="cdt.managedbuild.config.gnu.exe.debug.1327061439." name="/" resourcePath="">
 						<toolChain id="cdt.managedbuild.toolchain.llvm.clang.linux.base.1476018401" name="LLVM with Clang (Linux)" superClass="cdt.managedbuild.toolchain.llvm.clang.linux.base">
 							<targetPlatform archList="all" binaryParser="org.eclipse.cdt.core.ELF" id="cdt.managedbuild.target.llvm.platform.base.176979635" isAbstract="true" name="Debug Platform" osList="linux,hpux,aix,qnx" superClass="cdt.managedbuild.target.llvm.platform.base"/>
-							<builder buildPath="${workspace_loc:/Vulkan Rotating Cube}/Debug" id="cdt.managedbuild.target.llvm.builder.base.1927049906" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" parallelBuildOn="true" parallelizationNumber="optimal" stopOnErr="false" superClass="cdt.managedbuild.target.llvm.builder.base"/>
+							<builder buildPath="${workspace_loc:/Vulkan Rotating Cube}/Debug" enableAutoBuild="true" id="cdt.managedbuild.target.llvm.builder.base.1927049906" keepEnvironmentInBuildfile="false" name="CDT Internal Builder" parallelBuildOn="true" parallelizationNumber="optimal" stopOnErr="false" superClass="cdt.managedbuild.target.llvm.builder.base"/>
 							<tool id="cdt.managedbuild.tool.llvm.assembler.base.1311601817" name="LLVM assembler" superClass="cdt.managedbuild.tool.llvm.assembler.base"/>
 							<tool id="cdt.managedbuild.tool.llvm.archiver.base.539576699" name="LLVM archiver" superClass="cdt.managedbuild.tool.llvm.archiver.base"/>
 							<tool id="cdt.managedbuild.tool.llvm.c.compiler.base.1734589840" name="LLVM Clang" superClass="cdt.managedbuild.tool.llvm.c.compiler.base">

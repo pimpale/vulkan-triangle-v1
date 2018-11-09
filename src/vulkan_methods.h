@@ -42,6 +42,7 @@ struct SwapChainInfo {
 	VkSurfaceFormatKHR* pFormats;
 	uint32_t presentModeCount;
 	VkPresentModeKHR* pPresentModes;
+	VkSurfaceFormatKHR preferredFormat;
 };
 
 
@@ -83,7 +84,7 @@ void delete_DebugCallback(VkInstance instance,
 
 VkPhysicalDevice getPhysicalDevice(VkInstance instance);
 
-VkDevice new_LogicalDevice(struct DeviceInfo deviceInfo,
+VkDevice new_Device(struct DeviceInfo deviceInfo,
 		VkPhysicalDevice physicalDevice,
 		uint32_t deviceQueueIndex,
 		uint32_t enabledExtensionCount,
@@ -109,7 +110,16 @@ VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
 
 void delete_SwapChain(VkDevice device, VkSwapchainKHR swapChain);
 
-void getSwapChainImages(VkDevice device, VkSwapchainKHR swapChain,
-		uint32_t *imageCount, VkImage *images);
+void new_SwapChainImages(VkDevice device, VkSwapchainKHR swapChain,
+		uint32_t *pImageCount, VkImage **ppSwapChainImages);
+
+void delete_SwapChainImages(VkImage* ppImages);
+
+void new_SwapChainImageViews(VkDevice device, VkFormat format,
+		uint32_t imageCount, VkImage* pSwapChainImages,
+		VkImageView** ppImageViews);
+
+void delete_SwapChainImageViews(VkDevice device, uint32_t imageCount,
+		VkImageView* pImageViews);
 
 #endif /* VULKAN_METHODS_H_ */

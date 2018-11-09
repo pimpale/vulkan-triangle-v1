@@ -37,7 +37,7 @@ int main(void) {
 
 		if (!ppExtensionNames) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			hardExit();
+			panic();
 		}
 
 		ppExtensionNames[0] = "VK_EXT_debug_utils";
@@ -72,7 +72,7 @@ int main(void) {
 	}
 
 	/*create device */
-	VkDevice device = new_LogicalDevice(deviceInfo, physicalDevice,
+	VkDevice device = new_Device(deviceInfo, physicalDevice,
 			deviceIndices.graphicsIndex, deviceExtensionCount,
 			ppDeviceExtensionNames, layerCount, ppLayerNames);
 
@@ -93,6 +93,18 @@ int main(void) {
 			(VkExtent2D ) { WINDOW_WIDTH, WINDOW_HEIGHT },
 			deviceIndices);
 
+	uint32_t swapChainImageCount = 0;
+	VkImage* pSwapChainImages = NULL;
+	VkImageView* pSwapChainImageViews = NULL;
+	new_SwapChainImages(device, swapChain, &swapChainImageCount,
+			&pSwapChainImages);
+	new_SwapChainImageViews(device, swapChainInfo.preferredFormat.format,
+			swapChainImageCount, pSwapChainImages, &pSwapChainImageViews);
+
+
+
+
+
 
 
 
@@ -102,7 +114,11 @@ int main(void) {
 	}
 
 	/*cleanup*/
+	delete_SwapChainImageViews(device, swapChainImageCount,
+			pSwapChainImageViews);
+	delete_SwapChainImages(pSwapChainImages);
 	delete_SwapChain(device, swapChain);
+	delete_SwapChainInfo(swapChainInfo);
 	delete_Device(device);
 	delete_DeviceInfo(deviceInfo);
 	delete_DebugCallback(instance, callback);

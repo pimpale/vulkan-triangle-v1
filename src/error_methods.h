@@ -24,6 +24,6 @@
 
 void errLog(int level, const char* message, ...);
 
-void hardExit();
+void panic();
 
 #endif /* ERROR_METHODS_H_ */

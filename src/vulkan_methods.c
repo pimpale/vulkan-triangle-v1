@@ -61,7 +61,7 @@ VkInstance new_Instance(struct InstanceInfo instanceInfo,
 
 		if (matchnum != enabledExtensionCount) {
 			errLog(FATAL, "failed to find required extension\n");
-			hardExit();
+			panic();
 		}
 
 		findMatchingStrings((const char* const *) instanceInfo.ppLayerNames,
@@ -70,7 +70,7 @@ VkInstance new_Instance(struct InstanceInfo instanceInfo,
 
 		if (matchnum != enabledLayerCount) {
 			errLog(FATAL, "failed to find required layer\n");
-			hardExit();
+			panic();
 		}
 	}
 	/* Create app info */
@@ -94,9 +94,9 @@ VkInstance new_Instance(struct InstanceInfo instanceInfo,
 	VkInstance instance = {0};
 	VkResult result = vkCreateInstance(&createInfo, NULL, &instance);
 	if (result != VK_SUCCESS) {
-		errLog(ERROR, "Failed to create instance, error code: %d",
+		errLog(FATAL, "Failed to create instance, error code: %d",
 				(uint32_t) result);
-		hardExit();
+		panic();
 	}
 	return (instance);
 }
@@ -125,13 +125,13 @@ VkDebugUtilsMessengerEXT new_DebugCallback(VkInstance instance) {
 					instance, "vkCreateDebugUtilsMessengerEXT");
 	if (!func) {
 		errLog(FATAL, "failed to find extension function\n");
-		hardExit();
+		panic();
 	}
 	VkResult result = func(instance, &createInfo, NULL, &callback);
 	if (result != VK_SUCCESS) {
 		errLog(ERROR, "Failed to create debug callback, error code: %d",
 				(uint32_t) result);
-		hardExit();
+		panic();
 	}
 	return (callback);
 }
@@ -154,12 +154,12 @@ VkPhysicalDevice getPhysicalDevice(VkInstance instance) {
 	VkResult res = vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
 	if (res != VK_SUCCESS || deviceCount == 0) {
 		errLog(FATAL, "no Vulkan capable device found");
-		hardExit();
+		panic();
 	}
 	VkPhysicalDevice *arr = malloc(deviceCount * sizeof(VkPhysicalDevice));
 	if (!arr) {
 		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-		hardExit();
+		panic();
 	}
 	vkEnumeratePhysicalDevices(instance, &deviceCount, arr);
 
@@ -176,7 +176,7 @@ VkPhysicalDevice getPhysicalDevice(VkInstance instance) {
 
 	if (selectedDevice == VK_NULL_HANDLE) {
 		errLog(ERROR, "no suitable Vulkan device found\n");
-		hardExit();
+		panic();
 	}
 
 	free(arr);
@@ -192,7 +192,7 @@ int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit) {
 			malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	if (!arr) {
 		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-		hardExit();
+		panic();
 	}
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, arr);
 	for (uint32_t i = 0; i < queueFamilyCount; i++) {
@@ -212,7 +212,7 @@ int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface) {
 			malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	if (!arr) {
 		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-		hardExit();
+		panic();
 	}
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, arr);
 	for (uint32_t i = 0; i < queueFamilyCount; i++) {
@@ -280,7 +280,7 @@ struct InstanceInfo new_InstanceInfo() {
 	if (!info.ppExtensionNames || !info.ppLayerNames || !pLayerProperties
 			|| !pExtensionProperties) {
 		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-		hardExit();
+		panic();
 	}
 
 	/* copy names to info */
@@ -289,7 +289,7 @@ struct InstanceInfo new_InstanceInfo() {
 				VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
 		if (!info.ppLayerNames[i]) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			hardExit();
+			panic();
 		}
 		strncpy(info.ppLayerNames[i], pLayerProperties[i].layerName,
 				VK_MAX_EXTENSION_NAME_SIZE);
@@ -299,7 +299,7 @@ struct InstanceInfo new_InstanceInfo() {
 				VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
 		if (!info.ppExtensionNames[i]) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			hardExit();
+			panic();
 		}
 		strncpy(info.ppExtensionNames[i], pExtensionProperties[i].extensionName,
 				VK_MAX_EXTENSION_NAME_SIZE);
@@ -348,7 +348,7 @@ struct DeviceInfo new_DeviceInfo(VkPhysicalDevice physicalDevice)
 	if (!info.ppExtensionNames || !info.ppLayerNames || !pLayerProperties
 			|| !pExtensionProperties) {
 		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-		hardExit();
+		panic();
 	}
 
 	/* grab values */
@@ -364,7 +364,7 @@ struct DeviceInfo new_DeviceInfo(VkPhysicalDevice physicalDevice)
 		VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
 		if (!info.ppLayerNames[i]) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			hardExit();
+			panic();
 		}
 		strncpy(info.ppLayerNames[i], pLayerProperties[i].layerName,
 		VK_MAX_EXTENSION_NAME_SIZE);
@@ -374,7 +374,7 @@ struct DeviceInfo new_DeviceInfo(VkPhysicalDevice physicalDevice)
 		VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
 		if (!info.ppExtensionNames[i]) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			hardExit();
+			panic();
 		}
 		strncpy(info.ppExtensionNames[i], pExtensionProperties[i].extensionName,
 		VK_MAX_EXTENSION_NAME_SIZE);
@@ -397,7 +397,7 @@ void delete_DeviceInfo(struct DeviceInfo deviceInfo) {
 	free(deviceInfo.ppLayerNames);
 }
 
-VkDevice new_LogicalDevice(struct DeviceInfo deviceInfo,
+VkDevice new_Device(struct DeviceInfo deviceInfo,
 		VkPhysicalDevice physicalDevice,
 		uint32_t deviceQueueIndex,
 		uint32_t enabledExtensionCount,
@@ -415,7 +415,7 @@ VkDevice new_LogicalDevice(struct DeviceInfo deviceInfo,
 
 		if (matchnum != enabledExtensionCount) {
 			errLog(FATAL, "failed to find required device extension\n");
-			hardExit();
+			panic();
 		}
 
 		findMatchingStrings((const char* const *) deviceInfo.ppLayerNames,
@@ -424,7 +424,7 @@ VkDevice new_LogicalDevice(struct DeviceInfo deviceInfo,
 
 		if (matchnum != enabledLayerCount) {
 			errLog(FATAL, "failed to find required device layer\n");
-			hardExit();
+			panic();
 		}
 	}
 
@@ -452,7 +452,7 @@ VkDevice new_LogicalDevice(struct DeviceInfo deviceInfo,
 	if (res != VK_SUCCESS) {
 		errLog(ERROR, "Failed to create device, error code: %d",
 				(uint32_t) res);
-		hardExit();
+		panic();
 	}
 
 	return (device);
@@ -464,33 +464,6 @@ VkQueue getQueue(VkDevice device, uint32_t deviceQueueIndex) {
 	return (queue);
 }
 
-VkSurfaceFormatKHR chooseSwapSurfaceFormat(struct SwapChainInfo swapChainInfo) {
-	VkSurfaceFormatKHR format = { 0 };
-
-	if (swapChainInfo.formatCount == 1
-			&& swapChainInfo.pFormats[0].format == VK_FORMAT_UNDEFINED) {
-		/* If it has no preference */
-		format.colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-		format.format = VK_FORMAT_B8G8R8A8_UNORM;
-	} else if (swapChainInfo.formatCount != 0) {
-		/* first one in list */
-		format = swapChainInfo.pFormats[0];
-	} else if (swapChainInfo.formatCount == 0) {
-		errLog(ERROR, "no formats available");
-	}
-
-	for (int i = 0; i < swapChainInfo.formatCount; i++) {
-		VkSurfaceFormatKHR availableFormat = swapChainInfo.pFormats[i];
-		if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM
-				&& availableFormat.colorSpace
-						== VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-			format = availableFormat;
-		}
-	}
-
-	return (format);
-}
-
 VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
 		struct SwapChainInfo swapChainInfo,
 		VkDevice device,
@@ -498,19 +471,19 @@ VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
 		struct DeviceIndices deviceIndices) {
 
 	VkSwapchainKHR swapChain;
-	VkSurfaceFormatKHR format = chooseSwapSurfaceFormat(swapChainInfo);
 	VkSwapchainCreateInfoKHR createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = surface;
 	createInfo.minImageCount = 2;
-	createInfo.imageFormat = format.format;
-	createInfo.imageColorSpace = format.colorSpace;
+	createInfo.imageFormat = swapChainInfo.preferredFormat.format;
+	createInfo.imageColorSpace = swapChainInfo.preferredFormat.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
 	if (!deviceIndices.hasGraphics || !deviceIndices.hasPresent) {
 		errLog(FATAL, "Invalid device to create swap chain\n");
+		panic();
 	}
 
 	uint32_t queueFamilyIndices[] = { deviceIndices.graphicsIndex,
@@ -537,7 +510,7 @@ VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
 	if (res != VK_SUCCESS) {
 		errLog(ERROR, "Failed to create swap chain, error code: %d",
 				(uint32_t) res);
-		hardExit();
+		panic();
 	}
 
 	return (swapChain);
@@ -549,40 +522,66 @@ void delete_SwapChain(VkDevice device, VkSwapchainKHR swapChain) {
 
 struct SwapChainInfo new_SwapChainInfo(VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface) {
-	struct SwapChainInfo info;
+	struct SwapChainInfo swapChainInfo;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
-			&info.surfaceCapabilities);
+			&swapChainInfo.surfaceCapabilities);
 
 	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface,
-			&info.formatCount, NULL);
-	if (info.formatCount != 0) {
-		info.pFormats = malloc(info.formatCount * sizeof(VkSurfaceFormatKHR));
-		if (!info.pFormats) {
+			&swapChainInfo.formatCount, NULL);
+	if (swapChainInfo.formatCount != 0) {
+		swapChainInfo.pFormats = malloc(
+				swapChainInfo.formatCount * sizeof(VkSurfaceFormatKHR));
+		if (!swapChainInfo.pFormats) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			hardExit();
+			panic();
 		}
 		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface,
-				&info.formatCount, info.pFormats);
+				&swapChainInfo.formatCount, swapChainInfo.pFormats);
 	} else {
-		info.pFormats = NULL;
+		swapChainInfo.pFormats = NULL;
 	}
 
 	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface,
-			&info.presentModeCount, NULL);
-	if (info.presentModeCount != 0) {
-		info.pPresentModes = malloc(
-				info.presentModeCount * sizeof(VkPresentModeKHR));
-		if (!info.pPresentModes) {
+			&swapChainInfo.presentModeCount, NULL);
+	if (swapChainInfo.presentModeCount != 0) {
+		swapChainInfo.pPresentModes = malloc(
+				swapChainInfo.presentModeCount * sizeof(VkPresentModeKHR));
+		if (!swapChainInfo.pPresentModes) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			hardExit();
+			panic();
 		}
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface,
-				&info.presentModeCount, info.pPresentModes);
+				&swapChainInfo.presentModeCount, swapChainInfo.pPresentModes);
 	} else {
-		info.pPresentModes = NULL;
+		swapChainInfo.pPresentModes = NULL;
 	}
 
-	return (info);
+
+	if (swapChainInfo.formatCount == 1
+			&& swapChainInfo.pFormats[0].format == VK_FORMAT_UNDEFINED) {
+		/* If it has no preference, use our own */
+		swapChainInfo.preferredFormat.colorSpace =
+				VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+		swapChainInfo.preferredFormat.format = VK_FORMAT_B8G8R8A8_UNORM;
+	} else if (swapChainInfo.formatCount != 0) {
+		/* we default to the first one in the list */
+		swapChainInfo.preferredFormat = swapChainInfo.pFormats[0];
+		/* However,  we check to make sure that what we want is in there */
+		for (uint32_t i = 0; i < swapChainInfo.formatCount; i++) {
+			VkSurfaceFormatKHR availableFormat = swapChainInfo.pFormats[i];
+			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM
+					&& availableFormat.colorSpace
+							== VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
+				swapChainInfo.preferredFormat = availableFormat;
+			}
+		}
+	} else {
+		errLog(ERROR, "no formats available\n");
+		panic();
+	}
+
+
+	return (swapChainInfo);
 }
 
 void delete_SwapChainInfo(struct SwapChainInfo swapChainInfo) {
@@ -590,15 +589,74 @@ void delete_SwapChainInfo(struct SwapChainInfo swapChainInfo) {
 	free(swapChainInfo.pPresentModes);
 }
 
-void getSwapChainImages(VkDevice device, VkSwapchainKHR swapChain,
-		uint32_t *imageCount, VkImage *images) {
-	vkGetSwapchainImagesKHR(device, swapChain, imageCount, NULL);
-	VkImage* tmp = realloc(images, (*imageCount) * sizeof(VkImage));
+void new_SwapChainImages(VkDevice device, VkSwapchainKHR swapChain,
+		uint32_t *pImageCount, VkImage **ppSwapChainImages) {
+	vkGetSwapchainImagesKHR(device, swapChain, pImageCount, NULL);
+	VkImage* tmp = malloc((*pImageCount) * sizeof(VkImage));
 	if (!tmp) {
-		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-		hardExit();
+		errLog(FATAL, "failed to get swap chain images: %s", strerror(errno));
+		panic();
 	} else {
-		images = tmp;
+		*ppSwapChainImages = tmp;
 	}
-	vkGetSwapchainImagesKHR(device, swapChain, imageCount, images);
+	vkGetSwapchainImagesKHR(device, swapChain, pImageCount, *ppSwapChainImages);
+}
+
+void delete_SwapChainImages(VkImage *images) {
+	free(images);
+}
+
+VkImageView new_ImageView(VkDevice device, VkImage image,
+		VkFormat format) {
+	VkImageViewCreateInfo createInfo = { 0 };
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createInfo.image = image;
+	createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.format = format;
+	createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	createInfo.subresourceRange.baseMipLevel = 0;
+	createInfo.subresourceRange.levelCount = 1;
+	createInfo.subresourceRange.baseArrayLayer = 0;
+	createInfo.subresourceRange.layerCount = 1;
+	VkImageView imageView;
+	VkResult ret = vkCreateImageView(device, &createInfo, NULL,
+			&imageView);
+	if (ret != VK_SUCCESS) {
+		errLog(FATAL, "could not create image view, error code: %d",
+				(uint32_t) ret);
+		panic();
+	}
+	return (imageView);
+}
+
+void delete_ImageView(VkDevice device, VkImageView imageView) {
+	vkDestroyImageView(device, imageView, NULL);
+}
+
+void new_SwapChainImageViews(VkDevice device, VkFormat format,
+		uint32_t imageCount, VkImage* pImages, VkImageView** pImageViews) {
+	VkImageView* tmp = malloc(imageCount * sizeof(VkImageView));
+	if (!tmp) {
+		errLog(FATAL, "could not create swap chain image views: %s",
+				strerror(errno));
+		panic();
+	} else {
+		*pImageViews = tmp;
+	}
+
+	for (uint32_t i = 0; i < imageCount; i++) {
+		(*pImageViews)[i] = new_ImageView(device, pImages[i], format);
+	}
+}
+
+void delete_SwapChainImageViews(VkDevice device, uint32_t imageCount,
+		VkImageView* pImageViews) {
+	for (uint32_t i = 0; i < imageCount; i++) {
+		delete_ImageView(device, pImageViews[i]);
+	}
+	free(pImageViews);
 }
