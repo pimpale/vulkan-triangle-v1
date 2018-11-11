@@ -14,6 +14,7 @@
 
 #define NULL_INDEX -1
 
+
 /**
  * This struct contains data for a physical
  * device so that it doesn't have to continuously be fetched
@@ -94,11 +95,10 @@ VkDevice new_Device(struct DeviceInfo deviceInfo,
 
 void delete_Device(VkDevice device);
 
-struct DeviceIndices getDeviceIndices(VkPhysicalDevice physicalDevice,
+struct DeviceIndices new_DeviceIndices(VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface);
 
-int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit);
-int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface);
+void delete_DeviceIndices(struct DeviceIndices deviceIndices);
 
 VkQueue getQueue(VkDevice device, uint32_t deviceQueueIndex);
 
@@ -113,7 +113,7 @@ void delete_SwapChain(VkDevice device, VkSwapchainKHR swapChain);
 void new_SwapChainImages(VkDevice device, VkSwapchainKHR swapChain,
 		uint32_t *pImageCount, VkImage **ppSwapChainImages);
 
-void delete_SwapChainImages(VkImage* ppImages);
+void delete_SwapChainImages(VkImage* pImages);
 
 void new_SwapChainImageViews(VkDevice device, VkFormat format,
 		uint32_t imageCount, VkImage* pSwapChainImages,
@@ -121,5 +121,11 @@ void new_SwapChainImageViews(VkDevice device, VkFormat format,
 
 void delete_SwapChainImageViews(VkDevice device, uint32_t imageCount,
 		VkImageView* pImageViews);
+
+VkShaderModule new_ShaderModule(VkDevice device, uint32_t codeSize,
+		uint32_t* pCode);
+
+void delete_ShaderModule(VkDevice device, VkShaderModule shaderModule);
+
 
 #endif /* VULKAN_METHODS_H_ */

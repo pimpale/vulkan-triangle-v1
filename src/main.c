@@ -63,7 +63,7 @@ int main(void) {
 	VkSurfaceKHR surface = createSurface(pWindow, instance);
 
 	/* find queues on graphics device */
-	struct DeviceIndices deviceIndices = getDeviceIndices(physicalDevice,
+	struct DeviceIndices deviceIndices = new_DeviceIndices(physicalDevice,
 			surface);
 	/*fail if our required indices are not present */
 	if (!(deviceIndices.hasGraphics && deviceIndices.hasCompute
@@ -79,10 +79,6 @@ int main(void) {
 	/* get swap chain details */
 	struct SwapChainInfo swapChainInfo = new_SwapChainInfo(physicalDevice,
 			surface);
-
-	/* create queues */
-	VkQueue graphicsQueue = getQueue(device, deviceIndices.graphicsIndex);
-	VkQueue presentQueue = getQueue(device, deviceIndices.presentIndex);
 
 	/*Create swap chain */
 	VkSwapchainKHR
@@ -104,10 +100,6 @@ int main(void) {
 
 
 
-
-
-
-
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {
 		glfwPollEvents();
@@ -119,6 +111,7 @@ int main(void) {
 	delete_SwapChainImages(pSwapChainImages);
 	delete_SwapChain(device, swapChain);
 	delete_SwapChainInfo(swapChainInfo);
+	delete_DeviceIndices(deviceIndices);
 	delete_Device(device);
 	delete_DeviceInfo(deviceInfo);
 	delete_DebugCallback(instance, callback);
