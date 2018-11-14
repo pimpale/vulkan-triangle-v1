@@ -681,7 +681,7 @@ void delete_ShaderModule(VkDevice device, VkShaderModule shaderModule) {
 
 VkPipeline new_GraphicsPipeline(VkDevice device,
 		VkShaderModule vertShaderModule, VkShaderModule fragShaderModule,
-		VkExtent2D extent) {
+		VkExtent2D extent, VkRenderPass renderPass) {
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { };
 	vertShaderStageInfo.sType =
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
