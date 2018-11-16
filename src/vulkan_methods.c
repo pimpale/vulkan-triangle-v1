@@ -257,6 +257,10 @@ struct DeviceIndices new_DeviceIndices(VkPhysicalDevice physicalDevice,
 	return (deviceIndices);
 }
 
+void delete_DeviceIndices(struct DeviceIndices deviceIndices) {
+
+}
+
 struct InstanceInfo new_InstanceInfo() {
 	struct InstanceInfo info;
 	vkEnumerateInstanceLayerProperties(&info.layerCount, NULL);
@@ -679,17 +683,61 @@ void delete_ShaderModule(VkDevice device, VkShaderModule shaderModule) {
 	vkDestroyShaderModule(device, shaderModule, NULL);
 }
 
-VkPipeline new_GraphicsPipeline(VkDevice device,
+VkRenderPass new_RenderPass(VkDevice device, VkFormat swapChainImageFormat) {
+	VkAttachmentDescription colorAttachment = { 0 };
+	colorAttachment.format = swapChainImageFormat;
+	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
+	colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+	colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+	colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+	VkAttachmentReference colorAttachmentRef = { 0 };
+	colorAttachmentRef.attachment = 0;
+	colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+	VkSubpassDescription subpass = { 0 };
+	subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+	subpass.colorAttachmentCount = 1;
+	subpass.pColorAttachments = &colorAttachmentRef;
+
+	VkRenderPassCreateInfo renderPassInfo = { 0 };
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
+	renderPassInfo.attachmentCount = 1;
+	renderPassInfo.pAttachments = &colorAttachment;
+	renderPassInfo.subpassCount = 1;
+	renderPassInfo.pSubpasses = &subpass;
+
+	VkRenderPass renderPass;
+	VkResult res = vkCreateRenderPass(device, &renderPassInfo, NULL,
+			&renderPass);
+	if (res != VK_SUCCESS) {
+		errLog(FATAL, "Could not create render pass, error: %d\n",
+				(uint32_t) res);
+		panic();
+	}
+	return (renderPass);
+}
+
+void delete_RenderPass(VkDevice device, VkRenderPass renderPass) {
+	vkDestroyRenderPass(device, renderPass, NULL);
+}
+
+void new_GraphicsPipeline(VkDevice device,
 		VkShaderModule vertShaderModule, VkShaderModule fragShaderModule,
-		VkExtent2D extent, VkRenderPass renderPass) {
-	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { };
+		VkExtent2D extent,
+		VkRenderPass renderPass, VkPipelineLayout* pipelineLayout,
+		VkPipeline* graphicsPipeline) {
+	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { 0 };
 	vertShaderStageInfo.sType =
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 	vertShaderStageInfo.module = vertShaderModule;
 	vertShaderStageInfo.pName = "main";
 
-	VkPipelineShaderStageCreateInfo fragShaderStageInfo = { };
+	VkPipelineShaderStageCreateInfo fragShaderStageInfo = { 0 };
 	fragShaderStageInfo.sType =
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -771,9 +819,8 @@ VkPipeline new_GraphicsPipeline(VkDevice device,
 	pipelineLayoutInfo.setLayoutCount = 0;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
 
-	VkPipelineLayout pipelineLayout;
 	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL,
-			&pipelineLayout) != VK_SUCCESS) {
+			pipelineLayout) != VK_SUCCESS) {
 		errLog(FATAL, "failed to create pipeline layout\n");
 		panic();
 	}
@@ -788,18 +835,20 @@ VkPipeline new_GraphicsPipeline(VkDevice device,
 	pipelineInfo.pRasterizationState = &rasterizer;
 	pipelineInfo.pMultisampleState = &multisampling;
 	pipelineInfo.pColorBlendState = &colorBlending;
-	pipelineInfo.layout = pipelineLayout;
+	pipelineInfo.layout = *pipelineLayout;
 	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-	VkPipeline graphicsPipeline;
 	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
-			NULL, &graphicsPipeline) != VK_SUCCESS) {
+	NULL, graphicsPipeline) != VK_SUCCESS) {
 		errLog(FATAL, "failed to create graphics pipeline!\n");
 		panic();
 	}
-
-	return (graphicsPipeline);
 }
 
+void delete_GraphicsPipeline(VkDevice device, VkPipelineLayout pipelineLayout,
+		VkPipeline pipeline) {
+	vkDestroyPipeline(device, pipeline, NULL);
+	vkDestroyPipelineLayout(device, pipelineLayout, NULL);
+}

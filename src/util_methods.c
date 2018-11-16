@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <math.h>
 
 #include "error_methods.h"
 #include "constants.h"
@@ -95,7 +94,8 @@ void readShaderFile(char* filename, uint32_t* length, uint32_t** code) {
 	}
 
 	uint64_t filesize = getLength(fp);
-	uint64_t filesizepadded = ceill(filesize / 4.0) * 4;
+	uint64_t filesizepadded =
+			filesize % 4 == 0 ? filesize * 4 : (filesize + 1) * 4;
 
 	char *str = malloc(filesizepadded);
 	fread(str, filesize, sizeof(char), fp);

@@ -97,6 +97,8 @@ int main(void) {
 	new_SwapChainImageViews(device, swapChainInfo.preferredFormat.format,
 			swapChainImageCount, pSwapChainImages, &pSwapChainImageViews);
 
+	VkRenderPass renderPass = new_RenderPass(device,
+			swapChainInfo.preferredFormat.format);
 
 
 
@@ -106,6 +108,7 @@ int main(void) {
 	}
 
 	/*cleanup*/
+	delete_RenderPass(device, renderPass);
 	delete_SwapChainImageViews(device, swapChainImageCount,
 			pSwapChainImageViews);
 	delete_SwapChainImages(pSwapChainImages);

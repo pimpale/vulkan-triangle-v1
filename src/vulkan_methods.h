@@ -127,5 +127,19 @@ VkShaderModule new_ShaderModule(VkDevice device, uint32_t codeSize,
 
 void delete_ShaderModule(VkDevice device, VkShaderModule shaderModule);
 
+VkRenderPass new_RenderPass(VkDevice device, VkFormat swapChainImageFormat);
+
+void delete_RenderPass(VkDevice device, VkRenderPass renderPass);
+
+void new_GraphicsPipeline(VkDevice device,
+		VkShaderModule vertShaderModule, VkShaderModule fragShaderModule,
+		VkExtent2D extent,
+		VkRenderPass renderPass, VkPipelineLayout* pipelineLayout,
+		VkPipeline* graphicsPipeline);
+
+
+void delete_GraphicsPipeline(VkDevice device, VkPipelineLayout pipelineLayout,
+		VkPipeline pipeline);
+
 
 #endif /* VULKAN_METHODS_H_ */
