@@ -98,6 +98,12 @@ void readShaderFile(char* filename, uint32_t* length, uint32_t** code) {
 			filesize % 4 == 0 ? filesize * 4 : (filesize + 1) * 4;
 
 	char *str = malloc(filesizepadded);
+	if (!str) {
+		errLog(FATAL, "Could not read shader file: %s\n", strerror(errno));
+		fclose(fp);
+		panic();
+	}
+
 	fread(str, filesize, sizeof(char), fp);
 	fclose(fp);
 

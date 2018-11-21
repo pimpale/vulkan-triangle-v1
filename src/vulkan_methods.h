@@ -59,33 +59,35 @@ struct DeviceIndices {
 	bool hasPresent;
 };
 
-struct InstanceInfo new_InstanceInfo();
-void delete_InstanceInfo(struct InstanceInfo instanceInfo);
+uint32_t new_InstanceInfo(struct InstanceInfo* pInstanceInfo);
+uint32_t delete_InstanceInfo(struct InstanceInfo* pInstanceInfo);
 
-struct DeviceInfo new_DeviceInfo(VkPhysicalDevice physicalDevice);
-void delete_DeviceInfo(struct DeviceInfo deviceInfo);
+uint32_t new_DeviceInfo(struct DeviceInfo* pDeviceInfo,
+		VkPhysicalDevice physicalDevice);
+uint32_t delete_DeviceInfo(struct DeviceInfo* pDeviceInfo);
 
-struct SwapChainInfo new_SwapChainInfo(VkPhysicalDevice physicalDevice,
+uint32_t new_SwapChainInfo(struct SwapChainInfo *pSwapChainInfo,
+		VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface);
-void delete_SwapChainInfo(struct SwapChainInfo swapChainInfo);
+void delete_SwapChainInfo(struct SwapChainInfo* pSwapChainInfo);
 
-VkInstance new_Instance(struct InstanceInfo instanceInfo,
+uint32_t new_Instance(VkInstance* pInstance, struct InstanceInfo instanceInfo,
 		uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
 		uint32_t enabledLayerCount,
 		const char *const *ppEnabledLayerNames);
 
+void delete_Instance(VkInstance *pInstance);
 
-void delete_Instance(VkInstance instance);
+uint32_t new_DebugCallback(VkDebugUtilsMessengerEXT* pCallback,
+		VkInstance instance);
 
-VkDebugUtilsMessengerEXT new_DebugCallback(VkInstance instance);
+void delete_DebugCallback(VkDebugUtilsMessengerEXT *pCallback,
+		VkInstance instance);
 
-void delete_DebugCallback(VkInstance instance,
-		VkDebugUtilsMessengerEXT callback);
+uint32_t getPhysicalDevice(VkPhysicalDevice* pDevice, VkInstance instance);
 
-VkPhysicalDevice getPhysicalDevice(VkInstance instance);
-
-VkDevice new_Device(struct DeviceInfo deviceInfo,
+uint32_t new_Device(VkDevice* pDevice, struct DeviceInfo deviceInfo,
 		VkPhysicalDevice physicalDevice,
 		uint32_t deviceQueueIndex,
 		uint32_t enabledExtensionCount,
@@ -93,7 +95,7 @@ VkDevice new_Device(struct DeviceInfo deviceInfo,
 		uint32_t enabledLayerCount,
 		const char *const *ppEnabledLayerNames);
 
-void delete_Device(VkDevice device);
+void delete_Device(VkDevice *pDevice);
 
 struct DeviceIndices new_DeviceIndices(VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface);
@@ -134,12 +136,11 @@ void delete_RenderPass(VkDevice device, VkRenderPass renderPass);
 void new_GraphicsPipeline(VkDevice device,
 		VkShaderModule vertShaderModule, VkShaderModule fragShaderModule,
 		VkExtent2D extent,
-		VkRenderPass renderPass, VkPipelineLayout* pipelineLayout,
+		VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
 		VkPipeline* graphicsPipeline);
 
 
-void delete_GraphicsPipeline(VkDevice device, VkPipelineLayout pipelineLayout,
-		VkPipeline pipeline);
+void delete_GraphicsPipeline(VkDevice device, VkPipeline pipeline);
 
 
 #endif /* VULKAN_METHODS_H_ */

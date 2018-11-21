@@ -664,6 +664,7 @@ void delete_SwapChainImageViews(VkDevice device, uint32_t imageCount,
 	free(pImageViews);
 }
 
+
 VkShaderModule new_ShaderModule(VkDevice device, uint32_t codeSize,
 		uint32_t* pCode) {
 	VkShaderModuleCreateInfo createInfo = { 0 };
@@ -725,10 +726,31 @@ void delete_RenderPass(VkDevice device, VkRenderPass renderPass) {
 	vkDestroyRenderPass(device, renderPass, NULL);
 }
 
+VkPipelineLayout new_PipelineLayout(VkDevice device) {
+	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { 0 };
+	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+	pipelineLayoutInfo.setLayoutCount = 0;
+	pipelineLayoutInfo.pushConstantRangeCount = 0;
+	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+	VkResult res = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL,
+			&pipelineLayout);
+	if (res != VK_SUCCESS) {
+		errLog(FATAL, "failed to create pipeline layout with error: %d\n",
+				(uint32_t) res);
+		panic();
+	}
+	return (pipelineLayout);
+}
+
+void delete_PipelineLayout(VkDevice device, VkPipelineLayout pipelineLayout) {
+	vkDestroyPipelineLayout(device, pipelineLayout, NULL);
+}
+
+
 void new_GraphicsPipeline(VkDevice device,
 		VkShaderModule vertShaderModule, VkShaderModule fragShaderModule,
 		VkExtent2D extent,
-		VkRenderPass renderPass, VkPipelineLayout* pipelineLayout,
+		VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
 		VkPipeline* graphicsPipeline) {
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { 0 };
 	vertShaderStageInfo.sType =
@@ -814,17 +836,6 @@ void new_GraphicsPipeline(VkDevice device,
 	colorBlending.blendConstants[2] = 0.0f;
 	colorBlending.blendConstants[3] = 0.0f;
 
-	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { 0 };
-	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-	pipelineLayoutInfo.setLayoutCount = 0;
-	pipelineLayoutInfo.pushConstantRangeCount = 0;
-
-	if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL,
-			pipelineLayout) != VK_SUCCESS) {
-		errLog(FATAL, "failed to create pipeline layout\n");
-		panic();
-	}
-
 	VkGraphicsPipelineCreateInfo pipelineInfo = { 0 };
 	pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
 	pipelineInfo.stageCount = 2;
@@ -835,7 +846,7 @@ void new_GraphicsPipeline(VkDevice device,
 	pipelineInfo.pRasterizationState = &rasterizer;
 	pipelineInfo.pMultisampleState = &multisampling;
 	pipelineInfo.pColorBlendState = &colorBlending;
-	pipelineInfo.layout = *pipelineLayout;
+	pipelineInfo.layout = pipelineLayout;
 	pipelineInfo.renderPass = renderPass;
 	pipelineInfo.subpass = 0;
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
@@ -847,8 +858,6 @@ void new_GraphicsPipeline(VkDevice device,
 	}
 }
 
-void delete_GraphicsPipeline(VkDevice device, VkPipelineLayout pipelineLayout,
-		VkPipeline pipeline) {
+void delete_GraphicsPipeline(VkDevice device, VkPipeline pipeline) {
 	vkDestroyPipeline(device, pipeline, NULL);
-	vkDestroyPipelineLayout(device, pipelineLayout, NULL);
 }

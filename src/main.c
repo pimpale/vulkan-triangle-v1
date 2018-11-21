@@ -100,7 +100,26 @@ int main(void) {
 	VkRenderPass renderPass = new_RenderPass(device,
 			swapChainInfo.preferredFormat.format);
 
+	VkPipeline graphicsPipeline;
+	VkPipelineLayout graphicsPipelineLayout;
 
+	uint32_t* fragShaderFileContents;
+	uint32_t fragShaderFileLength;
+	readShaderFile("assets/shaders/shader.frag.spv", &fragShaderFileLength,
+			&fragShaderFileContents);
+	VkShaderModule fragShaderModule = new_ShaderModule(device,
+			fragShaderFileLength, fragShaderFileContents);
+
+	uint32_t* vertShaderFileContents;
+	uint32_t vertShaderFileLength;
+	readShaderFile("assets/shaders/shader.vert.spv", &vertShaderFileLength,
+			&vertShaderFileContents);
+	VkShaderModule vertShaderModule = new_ShaderModule(device,
+			vertShaderFileLength, vertShaderFileContents);
+
+
+
+	new_GraphicsPipeline(device, )
 
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {
