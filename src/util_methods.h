@@ -9,7 +9,6 @@
 #define UTIL_METHODS_H_
 
 #include <stdint.h>
-
 #include <vulkan.h>
 #define GLFW_INCLUDE_VULKAN
 #include <glfw3.h>
@@ -24,5 +23,9 @@ void findMatchingStrings(const char *const *ppData, uint32_t dataLen,
                          uint32_t *pMatches);
 
 void readShaderFile(char* filename, uint32_t* length, uint32_t** code);
+
+
+
+
 
 #endif /* UTIL_METHODS_H_ */

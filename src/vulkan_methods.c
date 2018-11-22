@@ -45,31 +45,60 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	return (VK_FALSE);
 }
 uint32_t new_Instance(VkInstance* pInstance,
-		const struct InstanceInfo instanceInfo,
 		const uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
 		const uint32_t enabledLayerCount,
 		const char * const *ppEnabledLayerNames) {
 	/* check layers and extensions */
 	{
-		uint32_t matchnum = 0;
-		findMatchingStrings((const char* const *) instanceInfo.ppExtensionNames,
-				instanceInfo.extensionCount, ppEnabledExtensionNames,
-				enabledExtensionCount,
-				NULL, 0, &matchnum);
+		uint32_t layerCount;
+		uint32_t extensionCount;
+		vkEnumerateInstanceLayerProperties(&layerCount, NULL);
+		vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
 
-		if (matchnum != enabledExtensionCount) {
-			errLog(FATAL, "failed to find required extension\n");
-			panic();
+		/* alloc arrays */
+		VkLayerProperties* pLayerProperties = malloc(
+				layerCount * sizeof(VkLayerProperties));
+		VkExtensionProperties* pExtensionProperties = malloc(
+				extensionCount * sizeof(VkExtensionProperties));
+
+		/* enumerate */
+		vkEnumerateInstanceLayerProperties(&layerCount, pLayerProperties);
+		vkEnumerateInstanceExtensionProperties(NULL, &extensionCount,
+				pExtensionProperties);
+
+		for (uint32_t x = 0; x < enabledExtensionCount; x++) {
+			int found = 0;
+			for (uint32_t y = 0; y < extensionCount; y++) {
+				if (strncmp(ppEnabledExtensionNames[x],
+						pExtensionProperties[y].extensionName,
+						VK_MAX_EXTENSION_NAME_SIZE)) {
+					found = 1;
+					break;
+				}
+			}
+			if (!found) {
+				errLog(FATAL, "requested extension \"%s\" could not be found\n",
+						ppEnabledExtensionNames[x]);
+				panic();
+			}
 		}
 
-		findMatchingStrings((const char* const *) instanceInfo.ppLayerNames,
-				instanceInfo.layerCount, ppEnabledLayerNames, enabledLayerCount,
-				NULL, 0, &matchnum);
-
-		if (matchnum != enabledLayerCount) {
-			errLog(FATAL, "failed to find required layer\n");
-			panic();
+		for (uint32_t x = 0; x < enabledLayerCount; x++) {
+			int found = 0;
+			for (uint32_t y = 0; y < layerCount; y++) {
+				if (strncmp(ppEnabledLayerNames[x],
+						pLayerProperties[y].layerName,
+						VK_MAX_EXTENSION_NAME_SIZE)) {
+					found = 1;
+					break;
+				}
+			}
+			if (!found) {
+				errLog(FATAL, "requested layer \"%s\" could not be found\n",
+						ppEnabledLayerNames[x]);
+				panic();
+			}
 		}
 	}
 	/* Create app info */
@@ -118,8 +147,6 @@ uint32_t new_DebugCallback(VkDebugUtilsMessengerEXT* pCallback,
 			VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
 			VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
 	createInfo.pfnUserCallback = debugCallback;
-
-	VkDebugUtilsMessengerEXT callback = {0};
 
 	/* Returns a function pointer */
 	PFN_vkCreateDebugUtilsMessengerEXT func =
@@ -261,76 +288,6 @@ uint32_t new_DeviceIndices(struct DeviceIndices* pDeviceIndices,
 
 void delete_DeviceIndices(struct DeviceIndices *pDeviceIndices) {
 
-}
-
-uint32_t new_InstanceInfo(struct InstanceInfo* pInstanceInfo) {
-	vkEnumerateInstanceLayerProperties(&(pInstanceInfo->layerCount), NULL);
-	vkEnumerateInstanceExtensionProperties(NULL,
-			&(pInstanceInfo->extensionCount),
-			NULL);
-
-	/* alloc number dependent info */
-	pInstanceInfo->ppLayerNames = malloc(
-			pInstanceInfo->layerCount * sizeof(char*));
-	pInstanceInfo->ppExtensionNames = malloc(
-			pInstanceInfo->extensionCount * sizeof(char*));
-	VkLayerProperties* pLayerProperties = malloc(
-			pInstanceInfo->layerCount * sizeof(VkLayerProperties));
-	VkExtensionProperties* pExtensionProperties = malloc(
-			pInstanceInfo->extensionCount * sizeof(VkExtensionProperties));
-
-	/* enumerate */
-	vkEnumerateInstanceLayerProperties(&pInstanceInfo->layerCount,
-			pLayerProperties);
-	vkEnumerateInstanceExtensionProperties(NULL, &pInstanceInfo->extensionCount,
-			pExtensionProperties);
-
-	/* check if not null */
-	if (!pInstanceInfo->ppExtensionNames || !pInstanceInfo->ppLayerNames
-			|| !pLayerProperties
-			|| !pExtensionProperties) {
-		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-		panic();
-	}
-
-	/* copy names to pInstanceInfo */
-	for (uint32_t i = 0; i < pInstanceInfo->layerCount; i++) {
-		pInstanceInfo->ppLayerNames[i] = malloc(
-				VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
-		if (!pInstanceInfo->ppLayerNames[i]) {
-			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			panic();
-		}
-		strncpy(pInstanceInfo->ppLayerNames[i], pLayerProperties[i].layerName,
-				VK_MAX_EXTENSION_NAME_SIZE);
-	}
-	for (uint32_t i = 0; i < pInstanceInfo->extensionCount; i++) {
-		pInstanceInfo->ppExtensionNames[i] = malloc(
-				VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
-		if (!pInstanceInfo->ppExtensionNames[i]) {
-			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			panic();
-		}
-		strncpy(pInstanceInfo->ppExtensionNames[i],
-				pExtensionProperties[i].extensionName,
-				VK_MAX_EXTENSION_NAME_SIZE);
-	}
-	free(pLayerProperties);
-	free(pExtensionProperties);
-	return (VK_SUCCESS);
-}
-
-
-void delete_InstanceInfo(struct InstanceInfo *pInstanceInfo) {
-	for (uint32_t i = 0; i < pInstanceInfo->extensionCount; i++) {
-		free(pInstanceInfo->ppExtensionNames[i]);
-	}
-	free(pInstanceInfo->ppExtensionNames);
-
-	for (uint32_t i = 0; i < pInstanceInfo->layerCount; i++) {
-		free(pInstanceInfo->ppLayerNames[i]);
-	}
-	free(pInstanceInfo->ppLayerNames);
 }
 
 
@@ -759,6 +716,7 @@ uint32_t new_GraphicsPipeline(VkPipeline* pGraphicsPipeline,
 		const VkDevice device, const VkShaderModule vertShaderModule,
 		const VkShaderModule fragShaderModule, const VkExtent2D extent,
 		const VkRenderPass renderPass, const VkPipelineLayout pipelineLayout) {
+
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { 0 };
 	vertShaderStageInfo.sType =
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

@@ -29,13 +29,6 @@ struct DeviceInfo {
 	char** ppLayerNames;
 };
 
-struct InstanceInfo {
-	uint32_t extensionCount;
-	char** ppExtensionNames;
-	uint32_t layerCount;
-	char** ppLayerNames;
-};
-
 struct SwapChainInfo {
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	uint32_t formatCount;
@@ -58,9 +51,6 @@ struct DeviceIndices {
 	uint32_t hasPresent;
 };
 
-uint32_t new_InstanceInfo(struct InstanceInfo* pInstanceInfo);
-void delete_InstanceInfo(struct InstanceInfo* pInstanceInfo);
-
 uint32_t new_DeviceInfo(struct DeviceInfo* pDeviceInfo,
 		VkPhysicalDevice physicalDevice);
 void delete_DeviceInfo(struct DeviceInfo* pDeviceInfo);
@@ -70,7 +60,7 @@ uint32_t new_SwapChainInfo(struct SwapChainInfo *pSwapChainInfo,
 		VkSurfaceKHR surface);
 void delete_SwapChainInfo(struct SwapChainInfo* pSwapChainInfo);
 
-uint32_t new_Instance(VkInstance* pInstance, struct InstanceInfo instanceInfo,
+uint32_t new_Instance(VkInstance* pInstance,
 		const uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
 		const uint32_t enabledLayerCount,
@@ -120,7 +110,7 @@ uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 		const VkDevice device, const VkFormat format, const uint32_t imageCount,
 		const VkImage* pSwapChainImages);
 
-void delete_SwapChainImageViews(VkImageView** pImageViews, uint32_t imageCount,
+void delete_SwapChainImageViews(VkImageView** ppImageViews, uint32_t imageCount,
 		const VkDevice device);
 
 uint32_t new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,

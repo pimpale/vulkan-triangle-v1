@@ -10,7 +10,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <stdbool.h>
 
 #include <vulkan.h>
 #define GLFW_DEFINE_VULKAN
@@ -18,6 +17,7 @@
 
 #include "constants.h"
 #include "error_methods.h"
+#include "util_methods.h"
 
 GLFWwindow *createGlfwWindow() {
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -34,9 +34,10 @@ VkSurfaceKHR createSurface(GLFWwindow *window, VkInstance instance) {
 	}
 	return (surface);
 }
-#include "error_methods.h"
-#include "constants.h"
-#include "util_methods.h"
+
+
+
+
 
 /* Preconditions: neither ppData nor ppQuery may be null.
  * dataLen must be the number of entries in ppData
