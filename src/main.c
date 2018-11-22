@@ -9,7 +9,6 @@
 
 #include "constants.h"
 #include "error_methods.h"
-#include "glfw_methods.h"
 #include "util_methods.h"
 #include "vulkan_methods.h"
 
@@ -47,6 +46,7 @@ int main(void) {
 	}
 
 	/*get instance info */
+
 	struct InstanceInfo instanceInfo = new_InstanceInfo();
 
 	/* Create instance */
@@ -118,8 +118,6 @@ int main(void) {
 			vertShaderFileLength, vertShaderFileContents);
 
 
-
-	new_GraphicsPipeline(device, );
 
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {

@@ -10,6 +10,14 @@
 
 #include <stdint.h>
 
+#include <vulkan.h>
+#define GLFW_INCLUDE_VULKAN
+#include <glfw3.h>
+
+GLFWwindow *createGlfwWindow();
+
+VkSurfaceKHR createSurface(GLFWwindow *window, VkInstance instance);
+
 void findMatchingStrings(const char *const *ppData, uint32_t dataLen,
                          const char *const *ppQuery, uint32_t queryLen,
                          char **ppResult, uint32_t resultLen,

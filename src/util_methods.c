@@ -10,7 +10,30 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
+#include <vulkan.h>
+#define GLFW_DEFINE_VULKAN
+#include <glfw3.h>
+
+#include "constants.h"
+#include "error_methods.h"
+
+GLFWwindow *createGlfwWindow() {
+	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+	return (glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", NULL, NULL));
+}
+
+VkSurfaceKHR createSurface(GLFWwindow *window, VkInstance instance) {
+	VkSurfaceKHR surface = { 0 };
+	VkResult res = glfwCreateWindowSurface(instance, window, NULL, &surface);
+	if (res != VK_SUCCESS) {
+		fprintf(stderr, "failed to create surface, quitting\n");
+		panic();
+	}
+	return (surface);
+}
 #include "error_methods.h"
 #include "constants.h"
 #include "util_methods.h"
@@ -86,6 +109,7 @@ void readShaderFile(char* filename, uint32_t* length, uint32_t** code) {
 		errLog(FATAL, "Could not read shader file: %s\n", strerror(errno));
 		fclose(fp);
 		panic();
+		return;
 	}
 
 	fread(str, filesize, sizeof(char), fp);
@@ -99,4 +123,5 @@ void readShaderFile(char* filename, uint32_t* length, uint32_t** code) {
 	/*set up*/
 	*length = filesizepadded;
 	*code = (uint32_t*) str;
+	return;
 }

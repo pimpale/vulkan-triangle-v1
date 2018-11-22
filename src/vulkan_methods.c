@@ -44,7 +44,8 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	errLog(errcode, "Vulkan validation layer: %s\n", pCallbackData->pMessage);
 	return (VK_FALSE);
 }
-uint32_t new_Instance(VkInstance* pInstance, struct InstanceInfo instanceInfo,
+uint32_t new_Instance(VkInstance* pInstance,
+		const struct InstanceInfo instanceInfo,
 		const uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
 		const uint32_t enabledLayerCount,
@@ -334,7 +335,7 @@ void delete_InstanceInfo(struct InstanceInfo *pInstanceInfo) {
 
 
 uint32_t new_DeviceInfo(struct DeviceInfo* pDeviceInfo,
-		VkPhysicalDevice physicalDevice) {
+		const VkPhysicalDevice physicalDevice) {
 	/* Instantiate DeviceInfo */
 	struct DeviceInfo info;
 	/* Set device properties and features */
