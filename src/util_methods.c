@@ -15,22 +15,6 @@
 #include "constants.h"
 #include "util_methods.h"
 
-
-/* Preconditions: src1 must not null, and it must have its size in bytes in
- * len1. src2 must not be null, and its size in bytes must be stored in len2
- * dest must not be null, and its size in bytes must be stored in destlen
- *
- * Output: src1 and src2 are guaranteed not to be modified
- * dest will contain all bytes in src1 followed by all bytes in src2
- *
- * Returns: void
- */
-void concatArray(void *src1, uint32_t len1, void *src2, uint32_t len2,
-		void *dest, uint32_t destlen) {
-	memmove((uint8_t*) dest, src1, len1);
-	memmove((uint8_t*) dest + len1, src2, len2);
-}
-
 /* Preconditions: neither ppData nor ppQuery may be null.
  * dataLen must be the number of entries in ppData
  * queryLen must be the number of entries in ppQuery

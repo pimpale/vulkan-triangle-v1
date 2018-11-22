@@ -119,7 +119,7 @@ int main(void) {
 
 
 
-	new_GraphicsPipeline(device, )
+	new_GraphicsPipeline(device, );
 
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {

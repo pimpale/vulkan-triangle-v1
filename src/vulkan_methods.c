@@ -44,13 +44,11 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	errLog(errcode, "Vulkan validation layer: %s\n", pCallbackData->pMessage);
 	return (VK_FALSE);
 }
-
-VkInstance new_Instance(struct InstanceInfo instanceInfo,
-		uint32_t enabledExtensionCount,
+uint32_t new_Instance(VkInstance* pInstance, struct InstanceInfo instanceInfo,
+		const uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
-		uint32_t enabledLayerCount,
-		const char *const *ppEnabledLayerNames) {
-
+		const uint32_t enabledLayerCount,
+		const char * const *ppEnabledLayerNames) {
 	/* check layers and extensions */
 	{
 		uint32_t matchnum = 0;
@@ -91,22 +89,25 @@ VkInstance new_Instance(struct InstanceInfo instanceInfo,
 	createInfo.enabledLayerCount = enabledLayerCount;
 	createInfo.ppEnabledLayerNames = ppEnabledLayerNames;
 
-	VkInstance instance = {0};
-	VkResult result = vkCreateInstance(&createInfo, NULL, &instance);
+	VkResult result = vkCreateInstance(&createInfo, NULL, pInstance);
 	if (result != VK_SUCCESS) {
 		errLog(FATAL, "Failed to create instance, error code: %d",
 				(uint32_t) result);
 		panic();
 	}
-	return (instance);
+	return (VK_SUCCESS);
 }
 
-void delete_Instance(VkInstance instance) { vkDestroyInstance(instance, NULL); }
+void delete_Instance(VkInstance *pInstance) {
+	vkDestroyInstance(*pInstance, NULL);
+}
 
 /**
  * Requires the debug utils extension
  */
-VkDebugUtilsMessengerEXT new_DebugCallback(VkInstance instance) {
+
+uint32_t new_DebugCallback(VkDebugUtilsMessengerEXT* pCallback,
+		const VkInstance instance) {
 	VkDebugUtilsMessengerCreateInfoEXT createInfo = {0};
 	createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
@@ -127,29 +128,29 @@ VkDebugUtilsMessengerEXT new_DebugCallback(VkInstance instance) {
 		errLog(FATAL, "failed to find extension function\n");
 		panic();
 	}
-	VkResult result = func(instance, &createInfo, NULL, &callback);
+	VkResult result = func(instance, &createInfo, NULL, pCallback);
 	if (result != VK_SUCCESS) {
 		errLog(ERROR, "Failed to create debug callback, error code: %d",
 				(uint32_t) result);
 		panic();
 	}
-	return (callback);
+	return (VK_SUCCESS);
 }
 
 /**
  * Requires the debug utils extension
  */
-void delete_DebugCallback(VkInstance instance,
-		VkDebugUtilsMessengerEXT callback) {
+void delete_DebugCallback(VkDebugUtilsMessengerEXT *pCallback,
+		const VkInstance instance) {
 	PFN_vkDestroyDebugUtilsMessengerEXT func =
 			(PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
 					instance, "vkDestroyDebugUtilsMessengerEXT");
 	if (func != NULL) {
-		func(instance, callback, NULL);
+		func(instance, *pCallback, NULL);
 	}
 }
 
-VkPhysicalDevice getPhysicalDevice(VkInstance instance) {
+uint32_t getPhysicalDevice(VkPhysicalDevice* pDevice, const VkInstance instance) {
 	uint32_t deviceCount = 0;
 	VkResult res = vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
 	if (res != VK_SUCCESS || deviceCount == 0) {
@@ -178,12 +179,14 @@ VkPhysicalDevice getPhysicalDevice(VkInstance instance) {
 		errLog(ERROR, "no suitable Vulkan device found\n");
 		panic();
 	}
-
 	free(arr);
-	return (selectedDevice);
+	*pDevice = selectedDevice;
+	return (VK_SUCCESS);
 }
 
-void delete_Device(VkDevice device) { vkDestroyDevice(device, NULL); }
+void delete_Device(VkDevice *pDevice) {
+	vkDestroyDevice(*pDevice, NULL);
+}
 
 int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit) {
 	uint32_t queueFamilyCount = 0;
@@ -226,109 +229,112 @@ int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface) {
 	return (-1);
 }
 
-struct DeviceIndices new_DeviceIndices(VkPhysicalDevice physicalDevice,
-		VkSurfaceKHR surface) {
-	struct DeviceIndices deviceIndices = { 0 };
-
+uint32_t new_DeviceIndices(struct DeviceIndices* pDeviceIndices,
+		const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface) {
 	int32_t tmp = getDeviceQueueIndex(physicalDevice, VK_QUEUE_GRAPHICS_BIT);
 	if (tmp != -1) {
-		deviceIndices.hasGraphics = true;
-		deviceIndices.graphicsIndex = (uint32_t) tmp;
+		pDeviceIndices->hasGraphics = true;
+		pDeviceIndices->graphicsIndex = (uint32_t) tmp;
 	} else {
-		deviceIndices.hasGraphics = false;
+		pDeviceIndices->hasGraphics = false;
 	}
 
 	tmp = getDeviceQueueIndex(physicalDevice, VK_QUEUE_COMPUTE_BIT);
 	if (tmp != -1) {
-		deviceIndices.hasCompute = true;
-		deviceIndices.computeIndex = (uint32_t) tmp;
+		pDeviceIndices->hasCompute = true;
+		pDeviceIndices->computeIndex = (uint32_t) tmp;
 	} else {
-		deviceIndices.hasCompute = false;
+		pDeviceIndices->hasCompute = false;
 	}
 
-	deviceIndices.hasPresent = false;
+	pDeviceIndices->hasPresent = false;
 	if (surface != VK_NULL_HANDLE) {
 		tmp = getPresentQueueIndex(physicalDevice, surface);
 		if (tmp != -1) {
-			deviceIndices.hasPresent = true;
-			deviceIndices.presentIndex = (uint32_t) tmp;
+			pDeviceIndices->hasPresent = true;
+			pDeviceIndices->presentIndex = (uint32_t) tmp;
 		}
 	}
-	return (deviceIndices);
+	return (VK_SUCCESS);
 }
 
-void delete_DeviceIndices(struct DeviceIndices deviceIndices) {
+void delete_DeviceIndices(struct DeviceIndices *pDeviceIndices) {
 
 }
 
-struct InstanceInfo new_InstanceInfo() {
-	struct InstanceInfo info;
-	vkEnumerateInstanceLayerProperties(&info.layerCount, NULL);
-	vkEnumerateInstanceExtensionProperties(NULL, &info.extensionCount, NULL);
-
+uint32_t new_InstanceInfo(struct InstanceInfo* pInstanceInfo) {
+	vkEnumerateInstanceLayerProperties(&(pInstanceInfo->layerCount), NULL);
+	vkEnumerateInstanceExtensionProperties(NULL,
+			&(pInstanceInfo->extensionCount),
+			NULL);
 
 	/* alloc number dependent info */
-	info.ppLayerNames = malloc(info.layerCount * sizeof(char*));
-	info.ppExtensionNames = malloc(info.extensionCount * sizeof(char*));
+	pInstanceInfo->ppLayerNames = malloc(
+			pInstanceInfo->layerCount * sizeof(char*));
+	pInstanceInfo->ppExtensionNames = malloc(
+			pInstanceInfo->extensionCount * sizeof(char*));
 	VkLayerProperties* pLayerProperties = malloc(
-			info.layerCount * sizeof(VkLayerProperties));
+			pInstanceInfo->layerCount * sizeof(VkLayerProperties));
 	VkExtensionProperties* pExtensionProperties = malloc(
-			info.extensionCount * sizeof(VkExtensionProperties));
+			pInstanceInfo->extensionCount * sizeof(VkExtensionProperties));
 
 	/* enumerate */
-	vkEnumerateInstanceLayerProperties(&info.layerCount, pLayerProperties);
-	vkEnumerateInstanceExtensionProperties(NULL, &info.extensionCount,
+	vkEnumerateInstanceLayerProperties(&pInstanceInfo->layerCount,
+			pLayerProperties);
+	vkEnumerateInstanceExtensionProperties(NULL, &pInstanceInfo->extensionCount,
 			pExtensionProperties);
 
 	/* check if not null */
-	if (!info.ppExtensionNames || !info.ppLayerNames || !pLayerProperties
+	if (!pInstanceInfo->ppExtensionNames || !pInstanceInfo->ppLayerNames
+			|| !pLayerProperties
 			|| !pExtensionProperties) {
 		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 		panic();
 	}
 
-	/* copy names to info */
-	for (uint32_t i = 0; i < info.layerCount; i++) {
-		info.ppLayerNames[i] = malloc(
+	/* copy names to pInstanceInfo */
+	for (uint32_t i = 0; i < pInstanceInfo->layerCount; i++) {
+		pInstanceInfo->ppLayerNames[i] = malloc(
 				VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
-		if (!info.ppLayerNames[i]) {
+		if (!pInstanceInfo->ppLayerNames[i]) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 			panic();
 		}
-		strncpy(info.ppLayerNames[i], pLayerProperties[i].layerName,
+		strncpy(pInstanceInfo->ppLayerNames[i], pLayerProperties[i].layerName,
 				VK_MAX_EXTENSION_NAME_SIZE);
 	}
-	for (uint32_t i = 0; i < info.extensionCount; i++) {
-		info.ppExtensionNames[i] = malloc(
+	for (uint32_t i = 0; i < pInstanceInfo->extensionCount; i++) {
+		pInstanceInfo->ppExtensionNames[i] = malloc(
 				VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
-		if (!info.ppExtensionNames[i]) {
+		if (!pInstanceInfo->ppExtensionNames[i]) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 			panic();
 		}
-		strncpy(info.ppExtensionNames[i], pExtensionProperties[i].extensionName,
+		strncpy(pInstanceInfo->ppExtensionNames[i],
+				pExtensionProperties[i].extensionName,
 				VK_MAX_EXTENSION_NAME_SIZE);
 	}
 	free(pLayerProperties);
 	free(pExtensionProperties);
-	return (info);
+	return (VK_SUCCESS);
 }
 
 
-void delete_InstanceInfo(struct InstanceInfo instanceInfo) {
-	for (uint32_t i = 0; i < instanceInfo.extensionCount; i++) {
-		free(instanceInfo.ppExtensionNames[i]);
+void delete_InstanceInfo(struct InstanceInfo *pInstanceInfo) {
+	for (uint32_t i = 0; i < pInstanceInfo->extensionCount; i++) {
+		free(pInstanceInfo->ppExtensionNames[i]);
 	}
-	free(instanceInfo.ppExtensionNames);
+	free(pInstanceInfo->ppExtensionNames);
 
-	for (uint32_t i = 0; i < instanceInfo.layerCount; i++) {
-		free(instanceInfo.ppLayerNames[i]);
+	for (uint32_t i = 0; i < pInstanceInfo->layerCount; i++) {
+		free(pInstanceInfo->ppLayerNames[i]);
 	}
-	free(instanceInfo.ppLayerNames);
+	free(pInstanceInfo->ppLayerNames);
 }
 
 
-struct DeviceInfo new_DeviceInfo(VkPhysicalDevice physicalDevice)
-{
+uint32_t new_DeviceInfo(struct DeviceInfo* pDeviceInfo,
+		VkPhysicalDevice physicalDevice) {
 	/* Instantiate DeviceInfo */
 	struct DeviceInfo info;
 	/* Set device properties and features */
@@ -385,30 +391,29 @@ struct DeviceInfo new_DeviceInfo(VkPhysicalDevice physicalDevice)
 	}
 	free(pLayerProperties);
 	free(pExtensionProperties);
-	return (info);
+	*pDeviceInfo = info;
+	return (VK_SUCCESS);
 }
 
 
-void delete_DeviceInfo(struct DeviceInfo deviceInfo) {
-	for (uint32_t i = 0; i < deviceInfo.extensionCount; i++) {
-		free(deviceInfo.ppExtensionNames[i]);
+void delete_DeviceInfo(struct DeviceInfo *pDeviceInfo) {
+	for (uint32_t i = 0; i < pDeviceInfo->extensionCount; i++) {
+		free(pDeviceInfo->ppExtensionNames[i]);
 	}
-	free(deviceInfo.ppExtensionNames);
+	free(pDeviceInfo->ppExtensionNames);
 
-	for (uint32_t i = 0; i < deviceInfo.layerCount; i++) {
-		free(deviceInfo.ppLayerNames[i]);
+	for (uint32_t i = 0; i < pDeviceInfo->layerCount; i++) {
+		free(pDeviceInfo->ppLayerNames[i]);
 	}
-	free(deviceInfo.ppLayerNames);
+	free(pDeviceInfo->ppLayerNames);
 }
 
-VkDevice new_Device(struct DeviceInfo deviceInfo,
-		VkPhysicalDevice physicalDevice,
-		uint32_t deviceQueueIndex,
-		uint32_t enabledExtensionCount,
+uint32_t new_Device(VkDevice* pDevice, const struct DeviceInfo deviceInfo,
+		const VkPhysicalDevice physicalDevice, const uint32_t deviceQueueIndex,
+		const uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
-		uint32_t enabledLayerCount,
+		const uint32_t enabledLayerCount,
 		const char *const *ppEnabledLayerNames) {
-
 	/* check layers and extensions */
 	{
 		uint32_t matchnum = 0;
@@ -451,21 +456,18 @@ VkDevice new_Device(struct DeviceInfo deviceInfo,
 	createInfo.enabledLayerCount = enabledLayerCount;
 	createInfo.ppEnabledLayerNames = ppEnabledLayerNames;
 
-	VkDevice device;
-	VkResult res = vkCreateDevice(physicalDevice, &createInfo, NULL, &device);
+	VkResult res = vkCreateDevice(physicalDevice, &createInfo, NULL, pDevice);
 	if (res != VK_SUCCESS) {
 		errLog(ERROR, "Failed to create device, error code: %d",
 				(uint32_t) res);
 		panic();
 	}
-
-	return (device);
+	return (VK_SUCCESS);
 }
 
-VkQueue getQueue(VkDevice device, uint32_t deviceQueueIndex) {
-	VkQueue queue;
-	vkGetDeviceQueue(device, deviceQueueIndex, 0, &queue);
-	return (queue);
+uint32_t getQueue(VkQueue* pQueue, const VkDevice device,
+		const uint32_t deviceQueueIndex) {
+	return (vkGetDeviceQueue(device, deviceQueueIndex, 0, pQueue));
 }
 
 VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
