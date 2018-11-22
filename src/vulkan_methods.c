@@ -153,12 +153,12 @@ uint32_t new_DebugCallback(VkDebugUtilsMessengerEXT* pCallback,
 			(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
 					instance, "vkCreateDebugUtilsMessengerEXT");
 	if (!func) {
-		errLog(FATAL, "failed to find extension function\n");
+		errLog(FATAL, "Failed to find extension function\n");
 		panic();
 	}
 	VkResult result = func(instance, &createInfo, NULL, pCallback);
 	if (result != VK_SUCCESS) {
-		errLog(ERROR, "Failed to create debug callback, error code: %d",
+		errLog(FATAL, "Failed to create debug callback, error code: %d",
 				(uint32_t) result);
 		panic();
 	}
@@ -196,9 +196,10 @@ uint32_t getPhysicalDevice(VkPhysicalDevice* pDevice, const VkInstance instance)
 	VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
 	for (uint32_t i = 0; i < deviceCount; i++) {
 		vkGetPhysicalDeviceProperties(arr[i], &deviceProperties);
-		int32_t ret = getDeviceQueueIndex(arr[i], VK_QUEUE_GRAPHICS_BIT |
-				VK_QUEUE_COMPUTE_BIT);
-		if (ret != -1) {
+		uint32_t deviceQueueIndex;
+		uint32_t ret = getDeviceQueueIndex(&deviceQueueIndex, arr[i],
+				VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+		if (ret == VK_SUCCESS) {
 			selectedDevice = arr[i];
 		}
 	}
@@ -216,78 +217,51 @@ void delete_Device(VkDevice *pDevice) {
 	vkDestroyDevice(*pDevice, NULL);
 }
 
-int32_t getDeviceQueueIndex(VkPhysicalDevice device, VkQueueFlags bit) {
+uint32_t getDeviceQueueIndex(uint32_t *deviceQueueIndex,
+		VkPhysicalDevice device, VkQueueFlags bit) {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
 	VkQueueFamilyProperties *arr =
 			malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	if (!arr) {
-		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
+		errLog(FATAL, "Failed to get device queue index: %s", strerror(errno));
 		panic();
 	}
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, arr);
 	for (uint32_t i = 0; i < queueFamilyCount; i++) {
 		if (arr[i].queueCount > 0 && (arr[0].queueFlags & bit)) {
 			free(arr);
-			return (i);
+			*deviceQueueIndex = i;
+			return (VK_SUCCESS);
 		}
 	}
 	free(arr);
-	return (-1);
+	return (ENODEV);
 }
 
-int32_t getPresentQueueIndex(VkPhysicalDevice device, VkSurfaceKHR surface) {
+uint32_t getPresentQueueIndex(uint32_t* pPresentQueueIndex,
+		const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface) {
 	uint32_t queueFamilyCount = 0;
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, NULL);
 	VkQueueFamilyProperties *arr =
 			malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	if (!arr) {
-		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
+		errLog(FATAL, "Failed to get present queue index: %s\n",
+				strerror(errno));
 		panic();
 	}
-	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, arr);
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, arr);
 	for (uint32_t i = 0; i < queueFamilyCount; i++) {
 		VkBool32 surfaceSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &surfaceSupport);
+		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &surfaceSupport);
 		if (surfaceSupport) {
-			return (i);
+			*pPresentQueueIndex = i;
+			free(arr);
+			return (VK_SUCCESS);
 		}
 	}
 	free(arr);
-	return (-1);
-}
-
-uint32_t new_DeviceIndices(struct DeviceIndices* pDeviceIndices,
-		const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface) {
-	int32_t tmp = getDeviceQueueIndex(physicalDevice, VK_QUEUE_GRAPHICS_BIT);
-	if (tmp != -1) {
-		pDeviceIndices->hasGraphics = true;
-		pDeviceIndices->graphicsIndex = (uint32_t) tmp;
-	} else {
-		pDeviceIndices->hasGraphics = false;
-	}
-
-	tmp = getDeviceQueueIndex(physicalDevice, VK_QUEUE_COMPUTE_BIT);
-	if (tmp != -1) {
-		pDeviceIndices->hasCompute = true;
-		pDeviceIndices->computeIndex = (uint32_t) tmp;
-	} else {
-		pDeviceIndices->hasCompute = false;
-	}
-
-	pDeviceIndices->hasPresent = false;
-	if (surface != VK_NULL_HANDLE) {
-		tmp = getPresentQueueIndex(physicalDevice, surface);
-		if (tmp != -1) {
-			pDeviceIndices->hasPresent = true;
-			pDeviceIndices->presentIndex = (uint32_t) tmp;
-		}
-	}
-	return (VK_SUCCESS);
-}
-
-void delete_DeviceIndices(struct DeviceIndices *pDeviceIndices) {
-
+	return (ENODEV);
 }
 
 
@@ -433,7 +407,7 @@ uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 		const VkSwapchainKHR oldSwapChain,
 		const struct SwapChainInfo swapChainInfo, const VkDevice device,
 		const VkSurfaceKHR surface, const VkExtent2D extent,
-		const struct DeviceIndices deviceIndices) {
+		const uint32_t graphicsIndex, const uint32_t presentIndex) {
 	VkSwapchainCreateInfoKHR createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = surface;
@@ -444,14 +418,8 @@ uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-	if (!deviceIndices.hasGraphics || !deviceIndices.hasPresent) {
-		errLog(FATAL, "Invalid device to create swap chain\n");
-		panic();
-	}
-
-	uint32_t queueFamilyIndices[] = { deviceIndices.graphicsIndex,
-			deviceIndices.presentIndex };
-	if (deviceIndices.graphicsIndex != deviceIndices.presentIndex) {
+	uint32_t queueFamilyIndices[] = { graphicsIndex, presentIndex };
+	if (graphicsIndex != presentIndex) {
 		createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 		createInfo.queueFamilyIndexCount = 2;
 		createInfo.pQueueFamilyIndices = queueFamilyIndices;

@@ -38,19 +38,6 @@ struct SwapChainInfo {
 	VkSurfaceFormatKHR preferredFormat;
 };
 
-
-/**
- * Queue family indices
- */
-struct DeviceIndices {
-	uint32_t computeIndex;
-	uint32_t graphicsIndex;
-	uint32_t presentIndex;
-	uint32_t hasCompute;
-	uint32_t hasGraphics;
-	uint32_t hasPresent;
-};
-
 uint32_t new_DeviceInfo(struct DeviceInfo* pDeviceInfo,
 		VkPhysicalDevice physicalDevice);
 void delete_DeviceInfo(struct DeviceInfo* pDeviceInfo);
@@ -85,10 +72,11 @@ uint32_t new_Device(VkDevice* pDevice, const struct DeviceInfo deviceInfo,
 
 void delete_Device(VkDevice *pDevice);
 
-uint32_t new_DeviceIndices(struct DeviceIndices* pDeviceIndices,
-		const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface);
+uint32_t getDeviceQueueIndex(uint32_t *deviceQueueIndex,
+		VkPhysicalDevice device, VkQueueFlags bit);
 
-void delete_DeviceIndices(struct DeviceIndices *pDeviceIndices);
+uint32_t getPresentQueueIndex(uint32_t* pPresentQueueIndex,
+		const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface);
 
 uint32_t getQueue(VkQueue* pQueue, const VkDevice device,
 		const uint32_t deviceQueueIndex);
@@ -97,7 +85,7 @@ uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 		const VkSwapchainKHR oldSwapChain,
 		const struct SwapChainInfo swapChainInfo, const VkDevice device,
 		const VkSurfaceKHR surface, const VkExtent2D extent,
-		const struct DeviceIndices deviceIndices);
+		const uint32_t graphicsIndex, const uint32_t presentIndex);
 
 void delete_SwapChain(VkSwapchainKHR* pSwapChain, const VkDevice device);
 

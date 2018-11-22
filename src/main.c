@@ -45,35 +45,42 @@ int main(void) {
 		}
 	}
 
-	/*get instance info */
-
-	struct InstanceInfo instanceInfo = new_InstanceInfo();
+	/* Create instance */
+	VkInstance instance;
+	new_Instance(&instance, extensionCount, ppExtensionNames, layerCount,
+			ppLayerNames);
+	VkDebugUtilsMessengerEXT callback;
+	new_DebugCallback(&callback, instance);
 
 	/* Create instance */
-	VkInstance instance = new_Instance(instanceInfo, extensionCount,
-			ppExtensionNames, layerCount, ppLayerNames);
-	VkDebugUtilsMessengerEXT callback = new_DebugCallback(instance);
-
-	VkPhysicalDevice physicalDevice = getPhysicalDevice(instance);
-	struct DeviceInfo deviceInfo = new_DeviceInfo(physicalDevice);
-
+	VkPhysicalDevice physicalDevice;
+	getPhysicalDevice(&physicalDevice, instance);
+	struct DeviceInfo deviceInfo;
+	new_DeviceInfo(&deviceInfo, physicalDevice);
 
 	/* Create window and surface */
 	GLFWwindow *pWindow = createGlfwWindow();
 	VkSurfaceKHR surface = createSurface(pWindow, instance);
 
 	/* find queues on graphics device */
-	struct DeviceIndices deviceIndices = new_DeviceIndices(physicalDevice,
-			surface);
+	uint32_t graphicsIndex;
+	uint32_t computeIndex;
+	uint32_t presentIndex;
 	/*fail if our required indices are not present */
-	if (!(deviceIndices.hasGraphics && deviceIndices.hasCompute
-			&& deviceIndices.hasPresent)) {
+	if (getDeviceQueueIndex(&graphicsIndex, physicalDevice,
+			VK_QUEUE_GRAPHICS_BIT) != VK_SUCCESS
+			|| getDeviceQueueIndex(&computeIndex, physicalDevice,
+			VK_QUEUE_COMPUTE_BIT) != VK_SUCCESS
+			|| getPresentQueueIndex(&presentIndex, physicalDevice, surface
+	) != VK_SUCCESS) {
 		errLog(FATAL, "unable to acquire indices\n");
+		panic();
 	}
 
 	/*create device */
-	VkDevice device = new_Device(deviceInfo, physicalDevice,
-			deviceIndices.graphicsIndex, deviceExtensionCount,
+	VkDevice device;
+	new_Device(&device, deviceInfo, physicalDevice, graphicsIndex,
+			deviceExtensionCount,
 			ppDeviceExtensionNames, layerCount, ppLayerNames);
 
 	/* get swap chain details */
