@@ -114,32 +114,37 @@ void delete_SwapChain(VkSwapchainKHR* pSwapChain, const VkDevice device);
 uint32_t new_SwapChainImages(uint32_t *pImageCount, VkImage **ppSwapChainImages,
 		const VkDevice device, const VkSwapchainKHR swapChain);
 
-void delete_SwapChainImages(VkImage* pImages);
+void delete_SwapChainImages(VkImage** ppImages);
 
 uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 		const VkDevice device, const VkFormat format, const uint32_t imageCount,
 		const VkImage* pSwapChainImages);
 
-void delete_SwapChainImageViews(VkImageView* pImageViews, VkDevice device,
-		uint32_t imageCount);
+void delete_SwapChainImageViews(VkImageView** pImageViews, uint32_t imageCount,
+		const VkDevice device);
 
-uint32_t new_ShaderModule(VkShaderModule *pShaderModule, VkDevice device,
-		uint32_t codeSize,
-		uint32_t* pCode);
+uint32_t new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
+		const uint32_t codeSize, const uint32_t* pCode);
 
-void delete_ShaderModule(VkShaderModule* pShaderModule, VkDevice device);
+void delete_ShaderModule(VkShaderModule* pShaderModule, const VkDevice device);
 
-uint32_t new_RenderPass(VkRenderPass* pRenderPass, VkDevice device,
-		VkFormat swapChainImageFormat);
+uint32_t new_RenderPass(VkRenderPass* pRenderPass, const VkDevice device,
+		const VkFormat swapChainImageFormat);
 
-void delete_RenderPass(VkRenderPass renderPass, VkDevice device);
+void delete_RenderPass(VkRenderPass *pRenderPass, const VkDevice device);
 
-uint32_t new_GraphicsPipeline(VkPipeline* graphicsPipeline,
+uint32_t new_PipelineLayout(VkPipelineLayout *pPipelineLayout,
+		const VkDevice device);
+
+void delete_PipelineLayout(VkPipelineLayout *pPipelineLayout,
+		const VkDevice device);
+
+uint32_t new_GraphicsPipeline(VkPipeline* pGraphicsPipeline,
 		const VkDevice device, const VkShaderModule vertShaderModule,
 		const VkShaderModule fragShaderModule, const VkExtent2D extent,
 		const VkRenderPass renderPass, const VkPipelineLayout pipelineLayout);
 
-void delete_GraphicsPipeline(VkPipeline *pPipeline, const VkDevice device);
+void delete_Pipeline(VkPipeline *pPipeline, const VkDevice device);
 
 
 #endif /* VULKAN_METHODS_H_ */

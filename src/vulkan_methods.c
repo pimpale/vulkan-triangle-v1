@@ -467,16 +467,15 @@ uint32_t new_Device(VkDevice* pDevice, const struct DeviceInfo deviceInfo,
 
 uint32_t getQueue(VkQueue* pQueue, const VkDevice device,
 		const uint32_t deviceQueueIndex) {
-	return (vkGetDeviceQueue(device, deviceQueueIndex, 0, pQueue));
+	vkGetDeviceQueue(device, deviceQueueIndex, 0, pQueue);
+	return (VK_SUCCESS);
 }
 
-VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
-		struct SwapChainInfo swapChainInfo,
-		VkDevice device,
-		VkSurfaceKHR surface, VkExtent2D extent,
-		struct DeviceIndices deviceIndices) {
-
-	VkSwapchainKHR swapChain;
+uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
+		const VkSwapchainKHR oldSwapChain,
+		const struct SwapChainInfo swapChainInfo, const VkDevice device,
+		const VkSurfaceKHR surface, const VkExtent2D extent,
+		const struct DeviceIndices deviceIndices) {
 	VkSwapchainCreateInfoKHR createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = surface;
@@ -511,73 +510,73 @@ VkSwapchainKHR new_SwapChain(VkSwapchainKHR oldSwapChain,
 	createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
 	createInfo.clipped = VK_TRUE;
 	createInfo.oldSwapchain = oldSwapChain;
-	VkResult res = vkCreateSwapchainKHR(device, &createInfo, NULL, &swapChain);
+	VkResult res = vkCreateSwapchainKHR(device, &createInfo, NULL, pSwapChain);
 	if (res != VK_SUCCESS) {
 		errLog(ERROR, "Failed to create swap chain, error code: %d",
 				(uint32_t) res);
 		panic();
 	}
-
-	return (swapChain);
+	return (VK_SUCCESS);
 }
 
-void delete_SwapChain(VkDevice device, VkSwapchainKHR swapChain) {
-	vkDestroySwapchainKHR(device, swapChain, NULL);
+void delete_SwapChain(VkSwapchainKHR *pSwapChain, const VkDevice device) {
+	vkDestroySwapchainKHR(device, *pSwapChain, NULL);
 }
 
-struct SwapChainInfo new_SwapChainInfo(VkPhysicalDevice physicalDevice,
+uint32_t new_SwapChainInfo(struct SwapChainInfo *pSwapChainInfo,
+		VkPhysicalDevice physicalDevice,
 		VkSurfaceKHR surface) {
-	struct SwapChainInfo swapChainInfo;
 	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
-			&swapChainInfo.surfaceCapabilities);
+			&pSwapChainInfo->surfaceCapabilities);
 
 	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface,
-			&swapChainInfo.formatCount, NULL);
-	if (swapChainInfo.formatCount != 0) {
-		swapChainInfo.pFormats = malloc(
-				swapChainInfo.formatCount * sizeof(VkSurfaceFormatKHR));
-		if (!swapChainInfo.pFormats) {
+			&pSwapChainInfo->formatCount, NULL);
+	if (pSwapChainInfo->formatCount != 0) {
+		pSwapChainInfo->pFormats = malloc(
+				pSwapChainInfo->formatCount * sizeof(VkSurfaceFormatKHR));
+		if (!pSwapChainInfo->pFormats) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 			panic();
 		}
 		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface,
-				&swapChainInfo.formatCount, swapChainInfo.pFormats);
+				&pSwapChainInfo->formatCount, pSwapChainInfo->pFormats);
 	} else {
-		swapChainInfo.pFormats = NULL;
+		pSwapChainInfo->pFormats = NULL;
 	}
 
 	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface,
-			&swapChainInfo.presentModeCount, NULL);
-	if (swapChainInfo.presentModeCount != 0) {
-		swapChainInfo.pPresentModes = malloc(
-				swapChainInfo.presentModeCount * sizeof(VkPresentModeKHR));
-		if (!swapChainInfo.pPresentModes) {
+			&pSwapChainInfo->presentModeCount, NULL);
+	if (pSwapChainInfo->presentModeCount != 0) {
+		pSwapChainInfo->pPresentModes = malloc(
+				pSwapChainInfo->presentModeCount * sizeof(VkPresentModeKHR));
+		if (!pSwapChainInfo->pPresentModes) {
 			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
 			panic();
 		}
 		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface,
-				&swapChainInfo.presentModeCount, swapChainInfo.pPresentModes);
+				&pSwapChainInfo->presentModeCount,
+				pSwapChainInfo->pPresentModes);
 	} else {
-		swapChainInfo.pPresentModes = NULL;
+		pSwapChainInfo->pPresentModes = NULL;
 	}
 
 
-	if (swapChainInfo.formatCount == 1
-			&& swapChainInfo.pFormats[0].format == VK_FORMAT_UNDEFINED) {
+	if (pSwapChainInfo->formatCount == 1
+			&& pSwapChainInfo->pFormats[0].format == VK_FORMAT_UNDEFINED) {
 		/* If it has no preference, use our own */
-		swapChainInfo.preferredFormat.colorSpace =
+		pSwapChainInfo->preferredFormat.colorSpace =
 				VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-		swapChainInfo.preferredFormat.format = VK_FORMAT_B8G8R8A8_UNORM;
-	} else if (swapChainInfo.formatCount != 0) {
+		pSwapChainInfo->preferredFormat.format = VK_FORMAT_B8G8R8A8_UNORM;
+	} else if (pSwapChainInfo->formatCount != 0) {
 		/* we default to the first one in the list */
-		swapChainInfo.preferredFormat = swapChainInfo.pFormats[0];
+		pSwapChainInfo->preferredFormat = pSwapChainInfo->pFormats[0];
 		/* However,  we check to make sure that what we want is in there */
-		for (uint32_t i = 0; i < swapChainInfo.formatCount; i++) {
-			VkSurfaceFormatKHR availableFormat = swapChainInfo.pFormats[i];
+		for (uint32_t i = 0; i < pSwapChainInfo->formatCount; i++) {
+			VkSurfaceFormatKHR availableFormat = pSwapChainInfo->pFormats[i];
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM
 					&& availableFormat.colorSpace
 							== VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-				swapChainInfo.preferredFormat = availableFormat;
+				pSwapChainInfo->preferredFormat = availableFormat;
 			}
 		}
 	} else {
@@ -585,17 +584,16 @@ struct SwapChainInfo new_SwapChainInfo(VkPhysicalDevice physicalDevice,
 		panic();
 	}
 
-
-	return (swapChainInfo);
+	return (VK_SUCCESS);
 }
 
-void delete_SwapChainInfo(struct SwapChainInfo swapChainInfo) {
-	free(swapChainInfo.pFormats);
-	free(swapChainInfo.pPresentModes);
+void delete_SwapChainInfo(struct SwapChainInfo *pSwapChainInfo) {
+	free(pSwapChainInfo->pFormats);
+	free(pSwapChainInfo->pPresentModes);
 }
 
-void new_SwapChainImages(VkDevice device, VkSwapchainKHR swapChain,
-		uint32_t *pImageCount, VkImage **ppSwapChainImages) {
+uint32_t new_SwapChainImages(uint32_t *pImageCount, VkImage **ppSwapChainImages,
+		const VkDevice device, const VkSwapchainKHR swapChain) {
 	vkGetSwapchainImagesKHR(device, swapChain, pImageCount, NULL);
 	VkImage* tmp = malloc((*pImageCount) * sizeof(VkImage));
 	if (!tmp) {
@@ -605,10 +603,13 @@ void new_SwapChainImages(VkDevice device, VkSwapchainKHR swapChain,
 		*ppSwapChainImages = tmp;
 	}
 	vkGetSwapchainImagesKHR(device, swapChain, pImageCount, *ppSwapChainImages);
+
+	return (VK_SUCCESS);
 }
 
-void delete_SwapChainImages(VkImage *pImages) {
-	free(pImages);
+void delete_SwapChainImages(VkImage **ppImages) {
+	free(*ppImages);
+	*ppImages = NULL;
 }
 
 VkImageView new_ImageView(VkDevice device, VkImage image,
@@ -642,8 +643,9 @@ void delete_ImageView(VkDevice device, VkImageView imageView) {
 	vkDestroyImageView(device, imageView, NULL);
 }
 
-void new_SwapChainImageViews(VkDevice device, VkFormat format,
-		uint32_t imageCount, VkImage* pSwapChainImages, VkImageView** ppImageViews) {
+uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
+		const VkDevice device, const VkFormat format, const uint32_t imageCount,
+		const VkImage* pSwapChainImages) {
 	VkImageView* tmp = malloc(imageCount * sizeof(VkImageView));
 	if (!tmp) {
 		errLog(FATAL, "could not create swap chain image views: %s",
@@ -656,37 +658,40 @@ void new_SwapChainImageViews(VkDevice device, VkFormat format,
 	for (uint32_t i = 0; i < imageCount; i++) {
 		(*ppImageViews)[i] = new_ImageView(device, pSwapChainImages[i], format);
 	}
+
+	return (VK_SUCCESS);
 }
 
-void delete_SwapChainImageViews(VkDevice device, uint32_t imageCount,
-		VkImageView* pImageViews) {
+void delete_SwapChainImageViews(VkImageView** ppImageViews, uint32_t imageCount,
+		const VkDevice device) {
 	for (uint32_t i = 0; i < imageCount; i++) {
-		delete_ImageView(device, pImageViews[i]);
+		delete_ImageView(device, (*ppImageViews)[i]);
 	}
-	free(pImageViews);
+	free(*ppImageViews);
+	*ppImageViews = NULL;
 }
 
 
-VkShaderModule new_ShaderModule(VkDevice device, uint32_t codeSize,
-		uint32_t* pCode) {
+uint32_t new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
+		const uint32_t codeSize, const uint32_t* pCode) {
 	VkShaderModuleCreateInfo createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 	createInfo.codeSize = codeSize;
 	createInfo.pCode = pCode;
-	VkShaderModule shaderModule;
 	VkResult res = vkCreateShaderModule(device, &createInfo, NULL,
-			&shaderModule);
+			pShaderModule);
 	if (res != VK_SUCCESS) {
 		errLog(FATAL, "failed to create shader module");
 	}
-	return (shaderModule);
+	return (VK_SUCCESS);
 }
 
-void delete_ShaderModule(VkDevice device, VkShaderModule shaderModule) {
-	vkDestroyShaderModule(device, shaderModule, NULL);
+void delete_ShaderModule(VkShaderModule* pShaderModule, const VkDevice device) {
+	vkDestroyShaderModule(device, *pShaderModule, NULL);
 }
 
-VkRenderPass new_RenderPass(VkDevice device, VkFormat swapChainImageFormat) {
+uint32_t new_RenderPass(VkRenderPass* pRenderPass, const VkDevice device,
+		const VkFormat swapChainImageFormat) {
 	VkAttachmentDescription colorAttachment = { 0 };
 	colorAttachment.format = swapChainImageFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -713,47 +718,46 @@ VkRenderPass new_RenderPass(VkDevice device, VkFormat swapChainImageFormat) {
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 
-	VkRenderPass renderPass;
 	VkResult res = vkCreateRenderPass(device, &renderPassInfo, NULL,
-			&renderPass);
+			pRenderPass);
 	if (res != VK_SUCCESS) {
 		errLog(FATAL, "Could not create render pass, error: %d\n",
 				(uint32_t) res);
 		panic();
 	}
-	return (renderPass);
+	return (VK_SUCCESS);
 }
 
-void delete_RenderPass(VkDevice device, VkRenderPass renderPass) {
-	vkDestroyRenderPass(device, renderPass, NULL);
+void delete_RenderPass(VkRenderPass *pRenderPass, const VkDevice device) {
+	vkDestroyRenderPass(device, *pRenderPass, NULL);
 }
 
-VkPipelineLayout new_PipelineLayout(VkDevice device) {
+uint32_t new_PipelineLayout(VkPipelineLayout *pPipelineLayout,
+		const VkDevice device) {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = { 0 };
 	pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
 	pipelineLayoutInfo.setLayoutCount = 0;
 	pipelineLayoutInfo.pushConstantRangeCount = 0;
-	VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
 	VkResult res = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL,
-			&pipelineLayout);
+			pPipelineLayout);
 	if (res != VK_SUCCESS) {
 		errLog(FATAL, "failed to create pipeline layout with error: %d\n",
 				(uint32_t) res);
 		panic();
 	}
-	return (pipelineLayout);
+	return (VK_SUCCESS);
 }
 
-void delete_PipelineLayout(VkDevice device, VkPipelineLayout pipelineLayout) {
-	vkDestroyPipelineLayout(device, pipelineLayout, NULL);
+void delete_PipelineLayout(VkPipelineLayout *pPipelineLayout,
+		const VkDevice device) {
+	vkDestroyPipelineLayout(device, *pPipelineLayout, NULL);
 }
 
 
-void new_GraphicsPipeline(VkDevice device,
-		VkShaderModule vertShaderModule, VkShaderModule fragShaderModule,
-		VkExtent2D extent,
-		VkRenderPass renderPass, VkPipelineLayout pipelineLayout,
-		VkPipeline* graphicsPipeline) {
+uint32_t new_GraphicsPipeline(VkPipeline* pGraphicsPipeline,
+		const VkDevice device, const VkShaderModule vertShaderModule,
+		const VkShaderModule fragShaderModule, const VkExtent2D extent,
+		const VkRenderPass renderPass, const VkPipelineLayout pipelineLayout) {
 	VkPipelineShaderStageCreateInfo vertShaderStageInfo = { 0 };
 	vertShaderStageInfo.sType =
 			VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -854,12 +858,13 @@ void new_GraphicsPipeline(VkDevice device,
 	pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
 	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
-	NULL, graphicsPipeline) != VK_SUCCESS) {
+	NULL, pGraphicsPipeline) != VK_SUCCESS) {
 		errLog(FATAL, "failed to create graphics pipeline!\n");
 		panic();
 	}
+	return (VK_SUCCESS);
 }
 
-void delete_GraphicsPipeline(VkDevice device, VkPipeline pipeline) {
-	vkDestroyPipeline(device, pipeline, NULL);
+void delete_Pipeline(VkPipeline *pPipeline, const VkDevice device) {
+	vkDestroyPipeline(device, *pPipeline, NULL);
 }
