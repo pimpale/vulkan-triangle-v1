@@ -49,7 +49,7 @@ uint32_t new_Instance(VkInstance* pInstance,
 		const char *const *ppEnabledExtensionNames,
 		const uint32_t enabledLayerCount,
 		const char * const *ppEnabledLayerNames) {
-	/* check layers and extensions */
+	/* check layers and extensions to see if they exist*/
 	{
 		uint32_t layerCount;
 		uint32_t extensionCount;
@@ -100,6 +100,8 @@ uint32_t new_Instance(VkInstance* pInstance,
 				panic();
 			}
 		}
+		free(pLayerProperties);
+		free(pExtensionProperties);
 	}
 	/* Create app info */
 	VkApplicationInfo appInfo = {0};

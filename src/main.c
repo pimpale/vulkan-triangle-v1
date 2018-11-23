@@ -52,9 +52,11 @@ int main(void) {
 	VkDebugUtilsMessengerEXT callback;
 	new_DebugCallback(&callback, instance);
 
-	/* Create instance */
+	/* get physical device */
 	VkPhysicalDevice physicalDevice;
 	getPhysicalDevice(&physicalDevice, instance);
+
+	/* Get device info */
 	struct DeviceInfo deviceInfo;
 	new_DeviceInfo(&deviceInfo, physicalDevice);
 
@@ -66,16 +68,22 @@ int main(void) {
 	uint32_t graphicsIndex;
 	uint32_t computeIndex;
 	uint32_t presentIndex;
-	/*fail if our required indices are not present */
-	if (getDeviceQueueIndex(&graphicsIndex, physicalDevice,
-			VK_QUEUE_GRAPHICS_BIT) != VK_SUCCESS
-			|| getDeviceQueueIndex(&computeIndex, physicalDevice,
-			VK_QUEUE_COMPUTE_BIT) != VK_SUCCESS
-			|| getPresentQueueIndex(&presentIndex, physicalDevice, surface
-	) != VK_SUCCESS) {
-		errLog(FATAL, "unable to acquire indices\n");
-		panic();
+	{
+		uint32_t ret1 = getDeviceQueueIndex(&graphicsIndex, physicalDevice,
+				VK_QUEUE_GRAPHICS_BIT);
+		uint32_t ret2 = getDeviceQueueIndex(&computeIndex, physicalDevice,
+				VK_QUEUE_COMPUTE_BIT);
+		uint32_t ret3 = getPresentQueueIndex(&presentIndex, physicalDevice,
+				surface);
+		/* Panic if indices are unavailable */
+		if (ret1 != VK_SUCCESS || ret2 != VK_SUCCESS || ret3 != VK_SUCCESS) {
+			errLog(FATAL, "unable to acquire indices\n");
+			panic();
+		}
 	}
+
+	/* Set extent (for now just window width and height) */
+	VkExtent2D extent = { WINDOW_WIDTH, WINDOW_HEIGHT };
 
 	/*create device */
 	VkDevice device;
@@ -84,47 +92,57 @@ int main(void) {
 			ppDeviceExtensionNames, layerCount, ppLayerNames);
 
 	/* get swap chain details */
-	struct SwapChainInfo swapChainInfo = new_SwapChainInfo(physicalDevice,
-			surface);
+	struct SwapChainInfo swapChainInfo;
+	new_SwapChainInfo(&swapChainInfo, physicalDevice, surface);
 
 	/*Create swap chain */
-	VkSwapchainKHR
-	swapChain = new_SwapChain(VK_NULL_HANDLE,
-			swapChainInfo,
-			device,
-			surface,
-			(VkExtent2D ) { WINDOW_WIDTH, WINDOW_HEIGHT },
-			deviceIndices);
+	VkSwapchainKHR swapChain;
+	new_SwapChain(&swapChain, VK_NULL_HANDLE, swapChainInfo, device, surface,
+			extent, graphicsIndex,
+			presentIndex);
 
 	uint32_t swapChainImageCount = 0;
 	VkImage* pSwapChainImages = NULL;
 	VkImageView* pSwapChainImageViews = NULL;
-	new_SwapChainImages(device, swapChain, &swapChainImageCount,
-			&pSwapChainImages);
-	new_SwapChainImageViews(device, swapChainInfo.preferredFormat.format,
-			swapChainImageCount, pSwapChainImages, &pSwapChainImageViews);
+	new_SwapChainImages(&swapChainImageCount, &pSwapChainImages, device,
+			swapChain);
+	new_SwapChainImageViews(&pSwapChainImageViews, device, swapChainInfo.preferredFormat.format,
+			swapChainImageCount,
+			pSwapChainImages);
 
-	VkRenderPass renderPass = new_RenderPass(device,
-			swapChainInfo.preferredFormat.format);
+
+	VkShaderModule fragShaderModule;
+	{
+		uint32_t* fragShaderFileContents;
+		uint32_t fragShaderFileLength;
+		readShaderFile("assets/shaders/shader.frag.spv", &fragShaderFileLength,
+				&fragShaderFileContents);
+		new_ShaderModule(&fragShaderModule, device, fragShaderFileLength,
+				fragShaderFileContents);
+		free(fragShaderFileContents);
+	}
+
+	VkShaderModule vertShaderModule;
+	{
+		uint32_t* vertShaderFileContents;
+		uint32_t vertShaderFileLength;
+		readShaderFile("assets/shaders/shader.vert.spv", &vertShaderFileLength,
+				&vertShaderFileContents);
+		new_ShaderModule(&vertShaderModule, device, vertShaderFileLength,
+				vertShaderFileContents);
+		free(vertShaderFileContents);
+	}
+
+	/* Create graphics pipeline */
+	VkRenderPass renderPass;
+	new_RenderPass(&renderPass, device, swapChainInfo.preferredFormat.format);
+
+	VkPipelineLayout graphicsPipelineLayout;
+	new_PipelineLayout(&graphicsPipelineLayout, device);
 
 	VkPipeline graphicsPipeline;
-	VkPipelineLayout graphicsPipelineLayout;
-
-	uint32_t* fragShaderFileContents;
-	uint32_t fragShaderFileLength;
-	readShaderFile("assets/shaders/shader.frag.spv", &fragShaderFileLength,
-			&fragShaderFileContents);
-	VkShaderModule fragShaderModule = new_ShaderModule(device,
-			fragShaderFileLength, fragShaderFileContents);
-
-	uint32_t* vertShaderFileContents;
-	uint32_t vertShaderFileLength;
-	readShaderFile("assets/shaders/shader.vert.spv", &vertShaderFileLength,
-			&vertShaderFileContents);
-	VkShaderModule vertShaderModule = new_ShaderModule(device,
-			vertShaderFileLength, vertShaderFileContents);
-
-
+	new_GraphicsPipeline(&graphicsPipeline, device, vertShaderModule,
+			fragShaderModule, extent, renderPass, graphicsPipelineLayout);
 
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {
@@ -132,18 +150,16 @@ int main(void) {
 	}
 
 	/*cleanup*/
-	delete_RenderPass(device, renderPass);
-	delete_SwapChainImageViews(device, swapChainImageCount,
-			pSwapChainImageViews);
-	delete_SwapChainImages(pSwapChainImages);
-	delete_SwapChain(device, swapChain);
-	delete_SwapChainInfo(swapChainInfo);
-	delete_DeviceIndices(deviceIndices);
-	delete_Device(device);
-	delete_DeviceInfo(deviceInfo);
-	delete_DebugCallback(instance, callback);
-	delete_Instance(instance);
-	delete_InstanceInfo(instanceInfo);
+	delete_RenderPass(&renderPass, device);
+	delete_SwapChainImageViews(&pSwapChainImageViews, swapChainImageCount,
+			device);
+	delete_SwapChainImages(&pSwapChainImages);
+	delete_SwapChain(&swapChain, device);
+	delete_SwapChainInfo(&swapChainInfo);
+	delete_Device(&device);
+	delete_DeviceInfo(&deviceInfo);
+	delete_DebugCallback(&callback, instance);
+	delete_Instance(&instance);
 	free(ppExtensionNames);
 	glfwTerminate();
 	return (EXIT_SUCCESS);
