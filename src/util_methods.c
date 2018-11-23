@@ -101,9 +101,9 @@ void readShaderFile(char* filename, uint32_t* length, uint32_t** code) {
 		panic();
 	}
 
-	uint64_t filesize = getLength(fp);
-	uint64_t filesizepadded =
-			filesize % 4 == 0 ? filesize * 4 : (filesize + 1) * 4;
+	uint32_t filesize = getLength(fp);
+	uint32_t filesizepadded = (
+			filesize % 4 == 0 ? filesize * 4 : (filesize + 1) * 4) / 4;
 
 	char *str = malloc(filesizepadded);
 	if (!str) {
@@ -117,7 +117,7 @@ void readShaderFile(char* filename, uint32_t* length, uint32_t** code) {
 	fclose(fp);
 
 	/*pad data*/
-	for (int i = filesize; i < filesizepadded; i++) {
+	for (uint32_t i = filesize; i < filesizepadded; i++) {
 		str[i] = 0;
 	}
 

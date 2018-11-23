@@ -150,6 +150,8 @@ int main(void) {
 	}
 
 	/*cleanup*/
+	delete_Pipeline(&graphicsPipeline, device);
+	delete_PipelineLayout(&graphicsPipelineLayout, device);
 	delete_RenderPass(&renderPass, device);
 	delete_SwapChainImageViews(&pSwapChainImageViews, swapChainImageCount,
 			device);
