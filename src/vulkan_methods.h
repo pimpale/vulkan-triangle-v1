@@ -124,5 +124,27 @@ uint32_t new_GraphicsPipeline(VkPipeline* pGraphicsPipeline,
 
 void delete_Pipeline(VkPipeline *pPipeline, const VkDevice device);
 
+uint32_t new_SwapChainFramebuffers(VkFramebuffer** ppFramebuffers,
+		const VkDevice device, const VkRenderPass renderPass,
+		const VkExtent2D swapChainExtent, const uint32_t imageCount,
+		const VkImageView* pSwapChainImageViews);
+
+
+void delete_SwapChainFramebuffers(VkFramebuffer** ppFramebuffers,
+		const uint32_t imageCount, const VkDevice device);
+
+uint32_t new_CommandPool(VkCommandPool *pCommandPool, const VkDevice device,
+		const uint32_t queueFamilyIndex);
+
+void delete_CommandPool(VkCommandPool *pCommandPool, const VkDevice device);
+
+uint32_t new_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers,
+		const VkDevice device, const VkRenderPass renderPass,
+		const VkPipeline graphicsPipeline, const VkCommandPool commandPool,
+		const VkExtent2D swapChainExtent,
+		const uint32_t swapChainFramebufferCount,
+		const VkFramebuffer* pSwapChainFramebuffers);
+
+void delete_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers);
 
 #endif /* VULKAN_METHODS_H_ */

@@ -797,7 +797,7 @@ uint32_t new_SwapChainFramebuffers(VkFramebuffer** ppFramebuffers,
 }
 
 void delete_SwapChainFramebuffers(VkFramebuffer** ppFramebuffers,
-		uint32_t imageCount, const VkDevice device) {
+		const uint32_t imageCount, const VkDevice device) {
 	for (uint32_t i = 0; i < imageCount; i++) {
 		delete_Framebuffer(&((*ppFramebuffers)[i]), device);
 	}
@@ -813,5 +813,89 @@ uint32_t new_CommandPool(VkCommandPool *pCommandPool, const VkDevice device,
 	poolInfo.flags = 0;
 	VkResult ret = vkCreateCommandPool(device, &poolInfo, NULL, pCommandPool);
 	return (ret);
+}
+
+void delete_CommandPool(VkCommandPool *pCommandPool, const VkDevice device) {
+	vkDestroyCommandPool(device, *pCommandPool, NULL);
+}
+
+uint32_t new_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers,
+		const VkDevice device, const VkRenderPass renderPass,
+		const VkPipeline graphicsPipeline, const VkCommandPool commandPool,
+		const VkExtent2D swapChainExtent,
+		const uint32_t swapChainFramebufferCount,
+		const VkFramebuffer* pSwapChainFramebuffers) {
+	VkCommandBufferAllocateInfo allocInfo = { 0 };
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandPool = commandPool;
+	allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	allocInfo.commandBufferCount = swapChainFramebufferCount;
+
+	VkCommandBuffer* pCommandBuffers = malloc(
+			swapChainFramebufferCount * sizeof(VkCommandBuffer));
+	if (!pCommandBuffers) {
+		errLog(FATAL, "Failed to create graphics command buffers: %s\n",
+				strerror(errno));
+		panic();
+	}
+
+	VkResult ret = vkAllocateCommandBuffers(device, &allocInfo,
+			pCommandBuffers);
+	if (ret != VK_SUCCESS) {
+		errLog(FATAL,
+				"Failed to create graphics command buffers, error code: %d\n",
+				(uint32_t) ret);
+		panic();
+	}
+
+	for (size_t i = 0; i < swapChainFramebufferCount; i++) {
+		VkCommandBufferBeginInfo beginInfo = { 0 };
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+		if (vkBeginCommandBuffer(pCommandBuffers[i], &beginInfo)
+				!= VK_SUCCESS) {
+			errLog(FATAL, "Failed to record into graphics command buffer\n");
+			panic();
+		}
+
+		VkRenderPassBeginInfo renderPassInfo = { 0 };
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = renderPass;
+		renderPassInfo.framebuffer = pSwapChainFramebuffers[i];
+		renderPassInfo.renderArea.offset = (VkOffset2D ) { 0, 0 };
+		renderPassInfo.renderArea.extent = swapChainExtent;
+
+		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+
+		renderPassInfo.clearValueCount = 1;
+		renderPassInfo.pClearValues = &clearColor;
+
+		vkCmdBeginRenderPass(pCommandBuffers[i], &renderPassInfo,
+				VK_SUBPASS_CONTENTS_INLINE);
+
+		vkCmdBindPipeline(pCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
+				graphicsPipeline);
+
+		vkCmdDraw(pCommandBuffers[i], 3, 1, 0, 0);
+
+		vkCmdEndRenderPass(pCommandBuffers[i]);
+
+		VkResult ret = vkEndCommandBuffer(pCommandBuffers[i]);
+		if (ret != VK_SUCCESS)
+		{
+			errLog(FATAL, "Failed to record command buffer, error code: %d",
+					(uint32_t) ret);
+			panic();
+		}
+	}
+
+	*ppCommandBuffers = pCommandBuffers;
+	return (VK_SUCCESS);
+}
+
+void delete_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers) {
+	free(*ppCommandBuffers);
+	*ppCommandBuffers = NULL;
 }
 
