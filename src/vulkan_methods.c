@@ -49,60 +49,6 @@ uint32_t new_Instance(VkInstance* pInstance,
 		const char *const *ppEnabledExtensionNames,
 		const uint32_t enabledLayerCount,
 		const char * const *ppEnabledLayerNames) {
-	/* check layers and extensions to see if they exist*/
-	{
-		uint32_t layerCount;
-		uint32_t extensionCount;
-		vkEnumerateInstanceLayerProperties(&layerCount, NULL);
-		vkEnumerateInstanceExtensionProperties(NULL, &extensionCount, NULL);
-
-		/* alloc arrays */
-		VkLayerProperties* pLayerProperties = malloc(
-				layerCount * sizeof(VkLayerProperties));
-		VkExtensionProperties* pExtensionProperties = malloc(
-				extensionCount * sizeof(VkExtensionProperties));
-
-		/* enumerate */
-		vkEnumerateInstanceLayerProperties(&layerCount, pLayerProperties);
-		vkEnumerateInstanceExtensionProperties(NULL, &extensionCount,
-				pExtensionProperties);
-
-		for (uint32_t x = 0; x < enabledExtensionCount; x++) {
-			int found = 0;
-			for (uint32_t y = 0; y < extensionCount; y++) {
-				if (strncmp(ppEnabledExtensionNames[x],
-						pExtensionProperties[y].extensionName,
-						VK_MAX_EXTENSION_NAME_SIZE)) {
-					found = 1;
-					break;
-				}
-			}
-			if (!found) {
-				errLog(FATAL, "requested extension \"%s\" could not be found\n",
-						ppEnabledExtensionNames[x]);
-				panic();
-			}
-		}
-
-		for (uint32_t x = 0; x < enabledLayerCount; x++) {
-			int found = 0;
-			for (uint32_t y = 0; y < layerCount; y++) {
-				if (strncmp(ppEnabledLayerNames[x],
-						pLayerProperties[y].layerName,
-						VK_MAX_EXTENSION_NAME_SIZE)) {
-					found = 1;
-					break;
-				}
-			}
-			if (!found) {
-				errLog(FATAL, "requested layer \"%s\" could not be found\n",
-						ppEnabledLayerNames[x]);
-				panic();
-			}
-		}
-		free(pLayerProperties);
-		free(pExtensionProperties);
-	}
 	/* Create app info */
 	VkApplicationInfo appInfo = {0};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
