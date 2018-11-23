@@ -751,9 +751,9 @@ void delete_Pipeline(VkPipeline *pPipeline, const VkDevice device) {
 	vkDestroyPipeline(device, *pPipeline, NULL);
 }
 
-uint32_t new_Framebuffer(VkFramebuffer *pFramebuffer, VkDevice device,
-		VkRenderPass renderPass, VkImageView imageView,
-		VkExtent2D swapChainExtent) {
+uint32_t new_Framebuffer(VkFramebuffer *pFramebuffer, const VkDevice device,
+		const VkRenderPass renderPass, const VkImageView imageView,
+		const VkExtent2D swapChainExtent) {
 	VkFramebufferCreateInfo framebufferInfo = { 0 };
 	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
 	framebufferInfo.renderPass = renderPass;

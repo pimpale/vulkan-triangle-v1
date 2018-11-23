@@ -83,7 +83,7 @@ int main(void) {
 	}
 
 	/* Set extent (for now just window width and height) */
-	VkExtent2D extent = { WINDOW_WIDTH, WINDOW_HEIGHT };
+	VkExtent2D swapChainExtent = { WINDOW_WIDTH, WINDOW_HEIGHT };
 
 	/*create device */
 	VkDevice device;
@@ -98,7 +98,7 @@ int main(void) {
 	/*Create swap chain */
 	VkSwapchainKHR swapChain;
 	new_SwapChain(&swapChain, VK_NULL_HANDLE, swapChainInfo, device, surface,
-			extent, graphicsIndex,
+			swapChainExtent, graphicsIndex,
 			presentIndex);
 
 	uint32_t swapChainImageCount = 0;
@@ -142,9 +142,26 @@ int main(void) {
 
 	VkPipeline graphicsPipeline;
 	new_GraphicsPipeline(&graphicsPipeline, device, vertShaderModule,
-			fragShaderModule, extent, renderPass, graphicsPipelineLayout);
+			fragShaderModule, swapChainExtent, renderPass,
+			graphicsPipelineLayout);
 	delete_ShaderModule(&fragShaderModule, device);
 	delete_ShaderModule(&vertShaderModule, device);
+
+	VkFramebuffer* pSwapChainFramebuffers;
+	new_SwapChainFramebuffers(&pSwapChainFramebuffers, device, renderPass,
+			swapChainExtent, swapChainImageCount, pSwapChainImageViews);
+
+	VkCommandPool commandPool;
+	new_CommandPool(&commandPool, device, graphicsIndex);
+
+	VkCommandBuffer *pGraphicsCommandBuffers;
+	new_GraphicsCommandBuffers(&pGraphicsCommandBuffers, device, renderPass,
+			graphicsPipeline, commandPool, swapChainExtent, swapChainImageCount,
+			pSwapChainFramebuffers);
+
+
+
+
 
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {
@@ -152,6 +169,10 @@ int main(void) {
 	}
 
 	/*cleanup*/
+	delete_GraphicsCommandBuffers(&pGraphicsCommandBuffers);
+	delete_CommandPool(&commandPool, device);
+	delete_SwapChainFramebuffers(&pSwapChainFramebuffers, swapChainImageCount,
+			device);
 	delete_Pipeline(&graphicsPipeline, device);
 	delete_PipelineLayout(&graphicsPipelineLayout, device);
 	delete_RenderPass(&renderPass, device);
