@@ -466,7 +466,8 @@ void delete_SwapChainInfo(struct SwapChainInfo *pSwapChainInfo) {
 	free(pSwapChainInfo->pPresentModes);
 }
 
-uint32_t new_SwapChainImages(uint32_t *pImageCount, VkImage **ppSwapChainImages,
+uint32_t new_SwapChainImages(uint32_t *pImageCount,
+		VkImage **ppSwapChainImages,
 		const VkDevice device, const VkSwapchainKHR swapChain) {
 	vkGetSwapchainImagesKHR(device, swapChain, pImageCount, NULL);
 	VkImage* tmp = malloc((*pImageCount) * sizeof(VkImage));
@@ -481,12 +482,13 @@ uint32_t new_SwapChainImages(uint32_t *pImageCount, VkImage **ppSwapChainImages,
 	return (VK_SUCCESS);
 }
 
-void delete_SwapChainImages(VkImage **ppImages) {
+void delete_SwapChainImages(VkImageView **ppImages) {
 	free(*ppImages);
 	*ppImages = NULL;
 }
 
-VkImageView new_ImageView(VkDevice device, VkImage image,
+uint32_t new_ImageView(VkImageView *pImageView, VkDevice device,
+		VkImageView image,
 		VkFormat format) {
 	VkImageViewCreateInfo createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -502,24 +504,23 @@ VkImageView new_ImageView(VkDevice device, VkImage image,
 	createInfo.subresourceRange.levelCount = 1;
 	createInfo.subresourceRange.baseArrayLayer = 0;
 	createInfo.subresourceRange.layerCount = 1;
-	VkImageView imageView;
 	VkResult ret = vkCreateImageView(device, &createInfo, NULL,
-			&imageView);
+			pImageView);
 	if (ret != VK_SUCCESS) {
 		errLog(FATAL, "could not create image view, error code: %d",
 				(uint32_t) ret);
 		panic();
 	}
-	return (imageView);
+	return (VK_SUCCESS);
 }
 
-void delete_ImageView(VkDevice device, VkImageView imageView) {
-	vkDestroyImageView(device, imageView, NULL);
+void delete_ImageView(VkImageView *pImageView, VkDevice device) {
+	vkDestroyImageView(device, *pImageView, NULL);
 }
 
 uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 		const VkDevice device, const VkFormat format, const uint32_t imageCount,
-		const VkImage* pSwapChainImages) {
+		const VkImageView* pSwapChainImages) {
 	VkImageView* tmp = malloc(imageCount * sizeof(VkImageView));
 	if (!tmp) {
 		errLog(FATAL, "could not create swap chain image views: %s",
@@ -530,7 +531,13 @@ uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 	}
 
 	for (uint32_t i = 0; i < imageCount; i++) {
-		(*ppImageViews)[i] = new_ImageView(device, pSwapChainImages[i], format);
+		uint32_t ret = new_ImageView(ppImageViews[i], device,
+				pSwapChainImages[i], format);
+		if (ret != VK_SUCCESS) {
+			errLog(FATAL, "could not create image view, error code: %d",
+					(uint32_t) ret);
+			panic();
+		}
 	}
 
 	return (VK_SUCCESS);
@@ -539,7 +546,7 @@ uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 void delete_SwapChainImageViews(VkImageView** ppImageViews, uint32_t imageCount,
 		const VkDevice device) {
 	for (uint32_t i = 0; i < imageCount; i++) {
-		delete_ImageView(device, (*ppImageViews)[i]);
+		delete_ImageView(&((*ppImageViews)[i]), device);
 	}
 	free(*ppImageViews);
 	*ppImageViews = NULL;
@@ -743,3 +750,68 @@ uint32_t new_GraphicsPipeline(VkPipeline* pGraphicsPipeline,
 void delete_Pipeline(VkPipeline *pPipeline, const VkDevice device) {
 	vkDestroyPipeline(device, *pPipeline, NULL);
 }
+
+uint32_t new_Framebuffer(VkFramebuffer *pFramebuffer, VkDevice device,
+		VkRenderPass renderPass, VkImageView imageView,
+		VkExtent2D swapChainExtent) {
+	VkFramebufferCreateInfo framebufferInfo = { 0 };
+	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebufferInfo.renderPass = renderPass;
+	framebufferInfo.attachmentCount = 1;
+	framebufferInfo.pAttachments = (VkImageView[] ) { imageView };
+	framebufferInfo.width = swapChainExtent.width;
+	framebufferInfo.height = swapChainExtent.height;
+	framebufferInfo.layers = 1;
+	VkResult res = vkCreateFramebuffer(device, &framebufferInfo, NULL,
+			pFramebuffer);
+	return ((uint32_t) res);
+}
+
+void delete_Framebuffer(VkFramebuffer *pFramebuffer, VkDevice device) {
+	vkDestroyFramebuffer(device, *pFramebuffer, NULL);
+}
+
+
+uint32_t new_SwapChainFramebuffers(VkFramebuffer** ppFramebuffers,
+		const VkDevice device, const VkRenderPass renderPass,
+		const VkExtent2D swapChainExtent, const uint32_t imageCount,
+		const VkImageView* pSwapChainImageViews) {
+	VkFramebuffer* tmp = malloc(imageCount * sizeof(VkFramebuffer));
+	if (!tmp) {
+		errLog(FATAL, "could not create framebuffers: %s",
+				strerror(errno));
+		panic();
+	}
+
+	for (uint32_t i = 0; i < imageCount; i++) {
+		uint32_t res = new_Framebuffer(&(tmp[i]), device, renderPass,
+				pSwapChainImageViews[i], swapChainExtent);
+		if (res != VK_SUCCESS) {
+			errLog(ERROR, "could not create framebuffer, error code: %d", res);
+			return (res);
+		}
+	}
+
+	*ppFramebuffers = tmp;
+	return (VK_SUCCESS);
+}
+
+void delete_SwapChainFramebuffers(VkFramebuffer** ppFramebuffers,
+		uint32_t imageCount, const VkDevice device) {
+	for (uint32_t i = 0; i < imageCount; i++) {
+		delete_Framebuffer(&((*ppFramebuffers)[i]), device);
+	}
+	free(*ppFramebuffers);
+	*ppFramebuffers = NULL;
+}
+
+uint32_t new_CommandPool(VkCommandPool *pCommandPool, const VkDevice device,
+		const uint32_t queueFamilyIndex) {
+	VkCommandPoolCreateInfo poolInfo = { 0 };
+	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.queueFamilyIndex = queueFamilyIndex;
+	poolInfo.flags = 0;
+	VkResult ret = vkCreateCommandPool(device, &poolInfo, NULL, pCommandPool);
+	return (ret);
+}
+

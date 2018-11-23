@@ -92,11 +92,11 @@ void delete_SwapChain(VkSwapchainKHR* pSwapChain, const VkDevice device);
 uint32_t new_SwapChainImages(uint32_t *pImageCount, VkImage **ppSwapChainImages,
 		const VkDevice device, const VkSwapchainKHR swapChain);
 
-void delete_SwapChainImages(VkImage** ppImages);
+void delete_SwapChainImages(VkImageView** ppImages);
 
 uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 		const VkDevice device, const VkFormat format, const uint32_t imageCount,
-		const VkImage* pSwapChainImages);
+		const VkImageView* pSwapChainImages);
 
 void delete_SwapChainImageViews(VkImageView** ppImageViews, uint32_t imageCount,
 		const VkDevice device);

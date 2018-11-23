@@ -102,7 +102,7 @@ int main(void) {
 			presentIndex);
 
 	uint32_t swapChainImageCount = 0;
-	VkImage* pSwapChainImages = NULL;
+	VkImageView* pSwapChainImages = NULL;
 	VkImageView* pSwapChainImageViews = NULL;
 	new_SwapChainImages(&swapChainImageCount, &pSwapChainImages, device,
 			swapChain);
@@ -143,6 +143,8 @@ int main(void) {
 	VkPipeline graphicsPipeline;
 	new_GraphicsPipeline(&graphicsPipeline, device, vertShaderModule,
 			fragShaderModule, extent, renderPass, graphicsPipelineLayout);
+	delete_ShaderModule(&fragShaderModule, device);
+	delete_ShaderModule(&vertShaderModule, device);
 
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {
