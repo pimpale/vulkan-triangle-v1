@@ -15,12 +15,12 @@
 #define FATAL 5
 #define UNKNOWN 6
 
-#define DEBUG_MSG "DEBUG"
-#define INFO_MSG "INFO"
-#define WARN_MSG "WARN"
-#define ERROR_MSG "ERROR"
-#define FATAL_MSG "FATAL"
-#define UNKNOWN_MSG "UNKNOWN_SEVERITY"
+#define DEBUG_MSG "debug"
+#define INFO_MSG "info"
+#define WARN_MSG "warning"
+#define ERROR_MSG "error"
+#define FATAL_MSG "fatal"
+#define UNKNOWN_MSG "unknown severity"
 
 void errLog(int level, const char* message, ...);
 
