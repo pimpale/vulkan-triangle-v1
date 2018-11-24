@@ -466,8 +466,9 @@ void delete_SwapChainInfo(struct SwapChainInfo *pSwapChainInfo) {
 	free(pSwapChainInfo->pPresentModes);
 }
 
-uint32_t new_SwapChainImages(uint32_t *pImageCount,
+uint32_t new_SwapChainImages(
 		VkImage **ppSwapChainImages,
+		uint32_t *pImageCount,
 		const VkDevice device, const VkSwapchainKHR swapChain) {
 	vkGetSwapchainImagesKHR(device, swapChain, pImageCount, NULL);
 	VkImage* tmp = malloc((*pImageCount) * sizeof(VkImage));
@@ -487,9 +488,8 @@ void delete_SwapChainImages(VkImageView **ppImages) {
 	*ppImages = NULL;
 }
 
-uint32_t new_ImageView(VkImageView *pImageView, VkDevice device,
-		VkImageView image,
-		VkFormat format) {
+uint32_t new_ImageView(VkImageView *pImageView, const VkDevice device,
+		const VkImage image, const VkFormat format) {
 	VkImageViewCreateInfo createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
 	createInfo.image = image;
@@ -520,18 +520,16 @@ void delete_ImageView(VkImageView *pImageView, VkDevice device) {
 
 uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 		const VkDevice device, const VkFormat format, const uint32_t imageCount,
-		const VkImageView* pSwapChainImages) {
-	VkImageView* tmp = malloc(imageCount * sizeof(VkImageView));
-	if (!tmp) {
+		const VkImage* pSwapChainImages) {
+	VkImageView* pImageViews = malloc(imageCount * sizeof(VkImageView));
+	if (!pImageViews) {
 		errLog(FATAL, "could not create swap chain image views: %s",
 				strerror(errno));
 		panic();
-	} else {
-		*ppImageViews = tmp;
 	}
 
 	for (uint32_t i = 0; i < imageCount; i++) {
-		uint32_t ret = new_ImageView(ppImageViews[i], device,
+		uint32_t ret = new_ImageView(&(pImageViews[i]), device,
 				pSwapChainImages[i], format);
 		if (ret != VK_SUCCESS) {
 			errLog(FATAL, "could not create image view, error code: %d",
@@ -540,6 +538,7 @@ uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 		}
 	}
 
+	*ppImageViews = pImageViews;
 	return (VK_SUCCESS);
 }
 

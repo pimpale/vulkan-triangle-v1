@@ -102,9 +102,9 @@ int main(void) {
 			presentIndex);
 
 	uint32_t swapChainImageCount = 0;
-	VkImageView* pSwapChainImages = NULL;
+	VkImage* pSwapChainImages = NULL;
 	VkImageView* pSwapChainImageViews = NULL;
-	new_SwapChainImages(&swapChainImageCount, &pSwapChainImages, device,
+	new_SwapChainImages(&pSwapChainImages, &swapChainImageCount, device,
 			swapChain);
 	new_SwapChainImageViews(&pSwapChainImageViews, device, swapChainInfo.preferredFormat.format,
 			swapChainImageCount,
