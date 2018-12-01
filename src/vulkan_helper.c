@@ -1,3 +1,5 @@
+#include "vulkan_helper.h"
+
 #include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -7,10 +9,9 @@
 
 #include <vulkan.h>
 
-#include "util_methods.h"
 #include "constants.h"
-#include "error_methods.h"
-#include "vulkan_methods.h"
+#include "errors.h"
+#include "utils.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -227,9 +228,20 @@ uint32_t new_DeviceInfo(struct DeviceInfo* pDeviceInfo,
 	vkEnumerateDeviceExtensionProperties(physicalDevice, NULL,
 			&info.extensionCount, NULL);
 
+
 	/* alloc count dependent info */
-	info.ppLayerNames = malloc(info.layerCount * sizeof(char*));
-	info.ppExtensionNames = malloc(info.extensionCount * sizeof(char*));
+	if (info.layerCount == 0) {
+		info.ppLayerNames = NULL;
+	} else {
+		info.ppLayerNames = malloc(info.layerCount * sizeof(char*));
+	}
+
+	if (info.extensionCount == 0) {
+		info.ppExtensionNames = NULL;
+	} else {
+		info.ppExtensionNames = malloc(info.extensionCount * sizeof(char*));
+	}
+
 	VkLayerProperties* pLayerProperties = malloc(
 			info.layerCount * sizeof(VkLayerProperties));
 	VkExtensionProperties* pExtensionProperties = malloc(
@@ -483,7 +495,7 @@ uint32_t new_SwapChainImages(
 	return (VK_SUCCESS);
 }
 
-void delete_SwapChainImages(VkImageView **ppImages) {
+void delete_SwapChainImages(VkImage **ppImages) {
 	free(*ppImages);
 	*ppImages = NULL;
 }
@@ -898,3 +910,12 @@ void delete_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers) {
 	*ppCommandBuffers = NULL;
 }
 
+uint32_t create_Semaphore(VkSemaphore* semaphore, const VkDevice device) {
+	VkSemaphoreCreateInfo semaphoreInfo = { 0 };
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	return (vkCreateSemaphore(device, &semaphoreInfo, NULL, semaphore));
+}
+
+void destroy_Semaphore(VkSemaphore* semaphore, const VkDevice device) {
+	vkDestroySemaphore(device, *semaphore, NULL);
+}

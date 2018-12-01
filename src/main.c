@@ -8,9 +8,9 @@
 #include <glfw3.h>
 
 #include "constants.h"
-#include "error_methods.h"
-#include "util_methods.h"
-#include "vulkan_methods.h"
+#include "errors.h"
+#include "utils.h"
+#include "vulkan_helper.h"
 
 int main(void) {
 	glfwInit();
@@ -159,6 +159,10 @@ int main(void) {
 			graphicsPipeline, commandPool, swapChainExtent, swapChainImageCount,
 			pSwapChainFramebuffers);
 
+	VkSemaphore imageAvailableSemaphore;
+	VkSemaphore renderFinishedSemaphore;
+	create_Semaphore(&imageAvailableSemaphore, device);
+	create_Semaphore(&renderFinishedSemaphore, device);
 
 
 
@@ -168,7 +172,10 @@ int main(void) {
 		glfwPollEvents();
 	}
 
+
 	/*cleanup*/
+	delete_Semaphore(&renderFinishedSemaphore, device);
+	delete_Semaphore(&imageAvailableSemaphore, device);
 	delete_GraphicsCommandBuffers(&pGraphicsCommandBuffers);
 	delete_CommandPool(&commandPool, device);
 	delete_SwapChainFramebuffers(&pSwapChainFramebuffers, swapChainImageCount,

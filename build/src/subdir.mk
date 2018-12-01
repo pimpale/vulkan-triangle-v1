@@ -4,22 +4,22 @@
 
 # Add inputs and outputs from these tool invocations to the build variables 
 C_SRCS += \
-../src/error_methods.c \
+../src/errors.c \
 ../src/main.c \
-../src/util_methods.c \
-../src/vulkan_methods.c 
+../src/utils.c \
+../src/vulkan_helper.c 
 
 OBJS += \
-./src/error_methods.o \
+./src/errors.o \
 ./src/main.o \
-./src/util_methods.o \
-./src/vulkan_methods.o 
+./src/utils.o \
+./src/vulkan_helper.o 
 
 C_DEPS += \
-./src/error_methods.d \
+./src/errors.d \
 ./src/main.d \
-./src/util_methods.d \
-./src/vulkan_methods.d 
+./src/utils.d \
+./src/vulkan_helper.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes

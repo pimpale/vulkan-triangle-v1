@@ -16,8 +16,8 @@
 #include <glfw3.h>
 
 #include "constants.h"
-#include "error_methods.h"
-#include "util_methods.h"
+#include "errors.h"
+#include "utils.h"
 
 GLFWwindow *createGlfwWindow() {
 	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
@@ -34,10 +34,6 @@ VkSurfaceKHR createSurface(GLFWwindow *window, VkInstance instance) {
 	}
 	return (surface);
 }
-
-
-
-
 
 /* Preconditions: neither ppData nor ppQuery may be null.
  * dataLen must be the number of entries in ppData

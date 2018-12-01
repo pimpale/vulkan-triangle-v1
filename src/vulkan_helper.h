@@ -5,8 +5,8 @@
  *      Author: gpi
  */
 
-#ifndef VULKAN_METHODS_H_
-#define VULKAN_METHODS_H_
+#ifndef VULKAN_HELPER_H_
+#define VULKAN_HELPER_H_
 
 #include <stdint.h>
 #include <vulkan.h>
@@ -18,16 +18,14 @@
  * This struct contains data for a physical
  * device so that it doesn't have to continuously be fetched
  */
-struct DeviceInfo {
-	/* all arrays will be malloc'ed and freed */
-	/* at new_DeviceInfo and delete_DeviceInfo, respectively */
+/*struct DeviceInfo {
 	VkPhysicalDeviceProperties deviceProperties;
 	VkPhysicalDeviceFeatures deviceFeatures;
 	uint32_t extensionCount;
 	char** ppExtensionNames;
 	uint32_t layerCount;
 	char** ppLayerNames;
-};
+ };*/
 
 struct SwapChainInfo {
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
@@ -92,7 +90,7 @@ void delete_SwapChain(VkSwapchainKHR* pSwapChain, const VkDevice device);
 uint32_t new_SwapChainImages(VkImage **ppSwapChainImages, uint32_t *pImageCount,
 		const VkDevice device, const VkSwapchainKHR swapChain);
 
-void delete_SwapChainImages(VkImageView** ppImages);
+void delete_SwapChainImages(VkImage** ppImages);
 
 uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 		const VkDevice device, const VkFormat format, const uint32_t imageCount,
@@ -147,4 +145,8 @@ uint32_t new_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers,
 
 void delete_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers);
 
-#endif /* VULKAN_METHODS_H_ */
+uint32_t create_Semaphore(VkSemaphore* semaphore, const VkDevice device);
+
+void destroy_Semaphore(VkSemaphore* semaphore, const VkDevice device);
+
+#endif /* VULKAN_HELPER_H_ */

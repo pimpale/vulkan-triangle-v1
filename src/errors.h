@@ -5,8 +5,8 @@
  *      Author: gpi
  */
 
-#ifndef ERROR_METHODS_H_
-#define ERROR_METHODS_H_
+#ifndef ERRORS_H_
+#define ERRORS_H_
 
 #define DEBUG 1
 #define INFO 2
@@ -26,4 +26,4 @@ void errLog(int level, const char* message, ...);
 
 void panic();
 
-#endif /* ERROR_METHODS_H_ */
+#endif /* ERRORS_H_ */
