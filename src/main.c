@@ -56,10 +56,6 @@ int main(void) {
 	VkPhysicalDevice physicalDevice;
 	getPhysicalDevice(&physicalDevice, instance);
 
-	/* Get device info */
-	struct DeviceInfo deviceInfo;
-	new_DeviceInfo(&deviceInfo, physicalDevice);
-
 	/* Create window and surface */
 	GLFWwindow *pWindow = createGlfwWindow();
 	VkSurfaceKHR surface = createSurface(pWindow, instance);
@@ -87,17 +83,18 @@ int main(void) {
 
 	/*create device */
 	VkDevice device;
-	new_Device(&device, deviceInfo, physicalDevice, graphicsIndex,
+	new_Device(&device, physicalDevice, graphicsIndex,
 			deviceExtensionCount,
 			ppDeviceExtensionNames, layerCount, ppLayerNames);
 
-	/* get swap chain details */
-	struct SwapChainInfo swapChainInfo;
-	new_SwapChainInfo(&swapChainInfo, physicalDevice, surface);
+	/* get preferred format of screen*/
+	VkSurfaceFormatKHR surfaceFormat;
+	getPreferredSurfaceFormat(&surfaceFormat, physicalDevice, surface);
 
 	/*Create swap chain */
 	VkSwapchainKHR swapChain;
-	new_SwapChain(&swapChain, VK_NULL_HANDLE, swapChainInfo, device, surface,
+	new_SwapChain(&swapChain, VK_NULL_HANDLE, surfaceFormat, physicalDevice,
+			device, surface,
 			swapChainExtent, graphicsIndex,
 			presentIndex);
 
@@ -106,7 +103,7 @@ int main(void) {
 	VkImageView* pSwapChainImageViews = NULL;
 	new_SwapChainImages(&pSwapChainImages, &swapChainImageCount, device,
 			swapChain);
-	new_SwapChainImageViews(&pSwapChainImageViews, device, swapChainInfo.preferredFormat.format,
+	new_SwapChainImageViews(&pSwapChainImageViews, device, surfaceFormat.format,
 			swapChainImageCount,
 			pSwapChainImages);
 
@@ -135,7 +132,7 @@ int main(void) {
 
 	/* Create graphics pipeline */
 	VkRenderPass renderPass;
-	new_RenderPass(&renderPass, device, swapChainInfo.preferredFormat.format);
+	new_RenderPass(&renderPass, device, surfaceFormat.format);
 
 	VkPipelineLayout graphicsPipelineLayout;
 	new_PipelineLayout(&graphicsPipelineLayout, device);
@@ -167,6 +164,7 @@ int main(void) {
 
 
 
+
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {
 		glfwPollEvents();
@@ -187,9 +185,7 @@ int main(void) {
 			device);
 	delete_SwapChainImages(&pSwapChainImages);
 	delete_SwapChain(&swapChain, device);
-	delete_SwapChainInfo(&swapChainInfo);
 	delete_Device(&device);
-	delete_DeviceInfo(&deviceInfo);
 	delete_DebugCallback(&callback, instance);
 	delete_Instance(&instance);
 	free(ppExtensionNames);

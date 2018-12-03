@@ -11,39 +11,15 @@
 #include <stdint.h>
 #include <vulkan.h>
 
-#define NULL_INDEX -1
 
-
-/**
- * This struct contains data for a physical
- * device so that it doesn't have to continuously be fetched
- */
-/*struct DeviceInfo {
-	VkPhysicalDeviceProperties deviceProperties;
-	VkPhysicalDeviceFeatures deviceFeatures;
-	uint32_t extensionCount;
-	char** ppExtensionNames;
-	uint32_t layerCount;
-	char** ppLayerNames;
- };*/
-
-struct SwapChainInfo {
+/*struct SwapChainInfo {
 	VkSurfaceCapabilitiesKHR surfaceCapabilities;
 	uint32_t formatCount;
 	VkSurfaceFormatKHR* pFormats;
 	uint32_t presentModeCount;
 	VkPresentModeKHR* pPresentModes;
 	VkSurfaceFormatKHR preferredFormat;
-};
-
-uint32_t new_DeviceInfo(struct DeviceInfo* pDeviceInfo,
-		VkPhysicalDevice physicalDevice);
-void delete_DeviceInfo(struct DeviceInfo* pDeviceInfo);
-
-uint32_t new_SwapChainInfo(struct SwapChainInfo *pSwapChainInfo,
-		VkPhysicalDevice physicalDevice,
-		VkSurfaceKHR surface);
-void delete_SwapChainInfo(struct SwapChainInfo* pSwapChainInfo);
+ }; */
 
 uint32_t new_Instance(VkInstance* pInstance,
 		const uint32_t enabledExtensionCount,
@@ -61,7 +37,7 @@ void delete_DebugCallback(VkDebugUtilsMessengerEXT *pCallback,
 
 uint32_t getPhysicalDevice(VkPhysicalDevice* pDevice, const VkInstance instance);
 
-uint32_t new_Device(VkDevice* pDevice, const struct DeviceInfo deviceInfo,
+uint32_t new_Device(VkDevice* pDevice,
 		const VkPhysicalDevice physicalDevice, const uint32_t deviceQueueIndex,
 		const uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
@@ -79,9 +55,13 @@ uint32_t getPresentQueueIndex(uint32_t* pPresentQueueIndex,
 uint32_t getQueue(VkQueue* pQueue, const VkDevice device,
 		const uint32_t deviceQueueIndex);
 
+uint32_t getPreferredSurfaceFormat(VkSurfaceFormatKHR* pSurfaceFormat,
+		const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface);
+
 uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 		const VkSwapchainKHR oldSwapChain,
-		const struct SwapChainInfo swapChainInfo, const VkDevice device,
+		const VkSurfaceFormatKHR preferredSurfaceFormat,
+		const VkPhysicalDevice physicalDevice, const VkDevice device,
 		const VkSurfaceKHR surface, const VkExtent2D extent,
 		const uint32_t graphicsIndex, const uint32_t presentIndex);
 
@@ -147,6 +127,6 @@ void delete_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers);
 
 uint32_t create_Semaphore(VkSemaphore* semaphore, const VkDevice device);
 
-void destroy_Semaphore(VkSemaphore* semaphore, const VkDevice device);
+void delete_Semaphore(VkSemaphore* semaphore, const VkDevice device);
 
 #endif /* VULKAN_HELPER_H_ */

@@ -129,6 +129,7 @@ char* vkstrerror(uint32_t errno)
 		default:
 		return ("UNKNOWN_ERROR");
 	}
+	return ("UNKNOWN_ERROR");
 }
 
 void panic() { exit(EXIT_FAILURE); }

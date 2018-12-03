@@ -213,124 +213,14 @@ uint32_t getPresentQueueIndex(uint32_t* pPresentQueueIndex,
 	return (ENODEV);
 }
 
-
-uint32_t new_DeviceInfo(struct DeviceInfo* pDeviceInfo,
-		const VkPhysicalDevice physicalDevice) {
-	/* Instantiate DeviceInfo */
-	struct DeviceInfo info;
-	/* Set device properties and features */
-	vkGetPhysicalDeviceProperties(physicalDevice, &info.deviceProperties);
-	vkGetPhysicalDeviceFeatures(physicalDevice, &info.deviceFeatures);
-
-	/* set extension and layer counts */
-	vkEnumerateDeviceLayerProperties(physicalDevice, &info.layerCount,
-			NULL);
-	vkEnumerateDeviceExtensionProperties(physicalDevice, NULL,
-			&info.extensionCount, NULL);
-
-
-	/* alloc count dependent info */
-	if (info.layerCount == 0) {
-		info.ppLayerNames = NULL;
-	} else {
-		info.ppLayerNames = malloc(info.layerCount * sizeof(char*));
-	}
-
-	if (info.extensionCount == 0) {
-		info.ppExtensionNames = NULL;
-	} else {
-		info.ppExtensionNames = malloc(info.extensionCount * sizeof(char*));
-	}
-
-	VkLayerProperties* pLayerProperties = malloc(
-			info.layerCount * sizeof(VkLayerProperties));
-	VkExtensionProperties* pExtensionProperties = malloc(
-			info.extensionCount * sizeof(VkExtensionProperties));
-
-	if (!info.ppExtensionNames || !info.ppLayerNames || !pLayerProperties
-			|| !pExtensionProperties) {
-		errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-		panic();
-	}
-
-	/* grab values */
-	vkEnumerateDeviceLayerProperties(physicalDevice, &info.layerCount,
-			pLayerProperties);
-	vkEnumerateDeviceExtensionProperties(physicalDevice, NULL,
-			&info.extensionCount,
-			pExtensionProperties);
-
-	/* copy names to info, mallocing as we go. */
-	for (uint32_t i = 0; i < info.layerCount; i++) {
-		info.ppLayerNames[i] = malloc(
-		VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
-		if (!info.ppLayerNames[i]) {
-			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			panic();
-		}
-		strncpy(info.ppLayerNames[i], pLayerProperties[i].layerName,
-		VK_MAX_EXTENSION_NAME_SIZE);
-	}
-	for (uint32_t i = 0; i < info.extensionCount; i++) {
-		info.ppExtensionNames[i] = malloc(
-		VK_MAX_EXTENSION_NAME_SIZE * sizeof(char));
-		if (!info.ppExtensionNames[i]) {
-			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			panic();
-		}
-		strncpy(info.ppExtensionNames[i], pExtensionProperties[i].extensionName,
-		VK_MAX_EXTENSION_NAME_SIZE);
-	}
-	free(pLayerProperties);
-	free(pExtensionProperties);
-	*pDeviceInfo = info;
-	return (VK_SUCCESS);
-}
-
-
-void delete_DeviceInfo(struct DeviceInfo *pDeviceInfo) {
-	for (uint32_t i = 0; i < pDeviceInfo->extensionCount; i++) {
-		free(pDeviceInfo->ppExtensionNames[i]);
-	}
-	free(pDeviceInfo->ppExtensionNames);
-
-	for (uint32_t i = 0; i < pDeviceInfo->layerCount; i++) {
-		free(pDeviceInfo->ppLayerNames[i]);
-	}
-	free(pDeviceInfo->ppLayerNames);
-}
-
-uint32_t new_Device(VkDevice* pDevice, const struct DeviceInfo deviceInfo,
+uint32_t new_Device(VkDevice* pDevice,
 		const VkPhysicalDevice physicalDevice, const uint32_t deviceQueueIndex,
 		const uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
 		const uint32_t enabledLayerCount,
 		const char *const *ppEnabledLayerNames) {
-	/* check layers and extensions */
-	{
-		uint32_t matchnum = 0;
-		findMatchingStrings((const char* const *) deviceInfo.ppExtensionNames,
-				deviceInfo.extensionCount, ppEnabledExtensionNames,
-				enabledExtensionCount,
-				NULL, 0, &matchnum);
-
-		if (matchnum != enabledExtensionCount) {
-			errLog(FATAL, "failed to find required device extension\n");
-			panic();
-		}
-
-		findMatchingStrings((const char* const *) deviceInfo.ppLayerNames,
-				deviceInfo.layerCount, ppEnabledLayerNames, enabledLayerCount,
-				NULL, 0, &matchnum);
-
-		if (matchnum != enabledLayerCount) {
-			errLog(FATAL, "failed to find required device layer\n");
-			panic();
-		}
-	}
 
 	VkPhysicalDeviceFeatures deviceFeatures = {0};
-
 	VkDeviceQueueCreateInfo queueCreateInfo = {0};
 	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 	queueCreateInfo.queueFamilyIndex = deviceQueueIndex;
@@ -365,15 +255,16 @@ uint32_t getQueue(VkQueue* pQueue, const VkDevice device,
 
 uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 		const VkSwapchainKHR oldSwapChain,
-		const struct SwapChainInfo swapChainInfo, const VkDevice device,
+		const VkSurfaceFormatKHR preferredSurfaceFormat,
+		const VkPhysicalDevice physicalDevice, const VkDevice device,
 		const VkSurfaceKHR surface, const VkExtent2D extent,
 		const uint32_t graphicsIndex, const uint32_t presentIndex) {
 	VkSwapchainCreateInfoKHR createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = surface;
 	createInfo.minImageCount = 2;
-	createInfo.imageFormat = swapChainInfo.preferredFormat.format;
-	createInfo.imageColorSpace = swapChainInfo.preferredFormat.colorSpace;
+	createInfo.imageFormat = preferredSurfaceFormat.format;
+	createInfo.imageColorSpace = preferredSurfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -389,8 +280,10 @@ uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 		createInfo.pQueueFamilyIndices = NULL; /* Optional */
 	}
 
-	createInfo.preTransform =
-			swapChainInfo.surfaceCapabilities.currentTransform;
+	VkSurfaceCapabilitiesKHR surfaceCapabilities;
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
+			&surfaceCapabilities);
+	createInfo.preTransform = surfaceCapabilities.currentTransform;
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	/* guaranteed to be available */
 	createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
@@ -409,60 +302,40 @@ void delete_SwapChain(VkSwapchainKHR *pSwapChain, const VkDevice device) {
 	vkDestroySwapchainKHR(device, *pSwapChain, NULL);
 }
 
-uint32_t new_SwapChainInfo(struct SwapChainInfo *pSwapChainInfo,
-		VkPhysicalDevice physicalDevice,
-		VkSurfaceKHR surface) {
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
-			&pSwapChainInfo->surfaceCapabilities);
 
-	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface,
-			&pSwapChainInfo->formatCount, NULL);
-	if (pSwapChainInfo->formatCount != 0) {
-		pSwapChainInfo->pFormats = malloc(
-				pSwapChainInfo->formatCount * sizeof(VkSurfaceFormatKHR));
-		if (!pSwapChainInfo->pFormats) {
-			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
+uint32_t getPreferredSurfaceFormat(VkSurfaceFormatKHR* pSurfaceFormat,
+		const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface) {
+	uint32_t formatCount;
+	VkSurfaceFormatKHR *pSurfaceFormats;
+	vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatCount,
+			NULL);
+	if (formatCount != 0) {
+		pSurfaceFormats = malloc(formatCount * sizeof(VkSurfaceFormatKHR));
+		if (!pSurfaceFormats) {
+			errLog(FATAL, "could not get preferred format: %s",
+					strerror(errno));
 			panic();
 		}
 		vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface,
-				&pSwapChainInfo->formatCount, pSwapChainInfo->pFormats);
+				&formatCount, pSurfaceFormats);
 	} else {
-		pSwapChainInfo->pFormats = NULL;
+		pSurfaceFormats = NULL;
 	}
 
-	vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface,
-			&pSwapChainInfo->presentModeCount, NULL);
-	if (pSwapChainInfo->presentModeCount != 0) {
-		pSwapChainInfo->pPresentModes = malloc(
-				pSwapChainInfo->presentModeCount * sizeof(VkPresentModeKHR));
-		if (!pSwapChainInfo->pPresentModes) {
-			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			panic();
-		}
-		vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface,
-				&pSwapChainInfo->presentModeCount,
-				pSwapChainInfo->pPresentModes);
-	} else {
-		pSwapChainInfo->pPresentModes = NULL;
-	}
-
-
-	if (pSwapChainInfo->formatCount == 1
-			&& pSwapChainInfo->pFormats[0].format == VK_FORMAT_UNDEFINED) {
+	VkSurfaceFormatKHR preferredFormat;
+	if (formatCount == 1 && pSurfaceFormats[0].format == VK_FORMAT_UNDEFINED) {
 		/* If it has no preference, use our own */
-		pSwapChainInfo->preferredFormat.colorSpace =
-				VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-		pSwapChainInfo->preferredFormat.format = VK_FORMAT_B8G8R8A8_UNORM;
-	} else if (pSwapChainInfo->formatCount != 0) {
+		preferredFormat = pSurfaceFormats[0];
+	} else if (formatCount != 0) {
 		/* we default to the first one in the list */
-		pSwapChainInfo->preferredFormat = pSwapChainInfo->pFormats[0];
+		preferredFormat = pSurfaceFormats[0];
 		/* However,  we check to make sure that what we want is in there */
-		for (uint32_t i = 0; i < pSwapChainInfo->formatCount; i++) {
-			VkSurfaceFormatKHR availableFormat = pSwapChainInfo->pFormats[i];
+		for (uint32_t i = 0; i < formatCount; i++) {
+			VkSurfaceFormatKHR availableFormat = pSurfaceFormats[i];
 			if (availableFormat.format == VK_FORMAT_B8G8R8A8_UNORM
 					&& availableFormat.colorSpace
 							== VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-				pSwapChainInfo->preferredFormat = availableFormat;
+				preferredFormat = availableFormat;
 			}
 		}
 	} else {
@@ -470,13 +343,12 @@ uint32_t new_SwapChainInfo(struct SwapChainInfo *pSwapChainInfo,
 		panic();
 	}
 
+	free(pSurfaceFormats);
+
+	*pSurfaceFormat = preferredFormat;
 	return (VK_SUCCESS);
 }
 
-void delete_SwapChainInfo(struct SwapChainInfo *pSwapChainInfo) {
-	free(pSwapChainInfo->pFormats);
-	free(pSwapChainInfo->pPresentModes);
-}
 
 uint32_t new_SwapChainImages(
 		VkImage **ppSwapChainImages,
@@ -583,7 +455,8 @@ void delete_ShaderModule(VkShaderModule* pShaderModule, const VkDevice device) {
 }
 
 uint32_t new_RenderPass(VkRenderPass* pRenderPass, const VkDevice device,
-		const VkFormat swapChainImageFormat) {
+		const VkFormat swapChainImageFormat, const uint32_t dependencyCount,
+		const VkSubpassDependency *pDependencies) {
 	VkAttachmentDescription colorAttachment = { 0 };
 	colorAttachment.format = swapChainImageFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -609,6 +482,9 @@ uint32_t new_RenderPass(VkRenderPass* pRenderPass, const VkDevice device,
 	renderPassInfo.pAttachments = &colorAttachment;
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
+
+	renderPassInfo.dependencyCount = dependencyCount;
+	renderPassInfo.pDependencies = pDependencies;
 
 	VkResult res = vkCreateRenderPass(device, &renderPassInfo, NULL,
 			pRenderPass);
@@ -916,6 +792,69 @@ uint32_t create_Semaphore(VkSemaphore* semaphore, const VkDevice device) {
 	return (vkCreateSemaphore(device, &semaphoreInfo, NULL, semaphore));
 }
 
-void destroy_Semaphore(VkSemaphore* semaphore, const VkDevice device) {
+void delete_Semaphore(VkSemaphore* semaphore, const VkDevice device) {
 	vkDestroySemaphore(device, *semaphore, NULL);
 }
+
+uint32_t drawFrame(const VkDevice device, const VkSwapchainKHR swapChain,
+		const VkCommandBuffer *pCommandBuffers,
+		const VkSemaphore imageAvailableSemaphore,
+		const VkSemaphore renderFinishedSemaphore, const VkQueue graphicsQueue,
+		const VkQueue presentQueue) {
+	uint32_t imageIndex;
+	vkAcquireNextImageKHR(device, swapChain, UINT64_MAX,
+			imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+	VkSubmitInfo submitInfo = { 0 };
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+	VkPipelineStageFlags waitStages[] = {
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = waitSemaphores;
+	submitInfo.pWaitDstStageMask = waitStages;
+
+	submitInfo.commandBufferCount = 1;
+	submitInfo.pCommandBuffers = &pCommandBuffers[imageIndex];
+
+	VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = signalSemaphores;
+
+	VkResult res = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+	if (res != VK_SUCCESS) {
+		errLog(ERROR, "failed to draw frame: failed to submit queue: %s",
+				vkstrerror(res));
+		panic();
+	}
+
+	VkSubpassDependency dependency = { 0 };
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+			| VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	VkPresentInfoKHR presentInfo = { 0 };
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = signalSemaphores;
+
+	VkSwapchainKHR swapChains[] = { swapChain };
+	presentInfo.swapchainCount = 1;
+	presentInfo.pSwapchains = swapChains;
+	presentInfo.pImageIndices = &imageIndex;
+
+	/*optional*/
+	presentInfo.pResults = NULL;
+
+	vkQueuePresentKHR(presentQueue, &presentInfo);
+
+	return (VK_SUCCESS);
+}
+
