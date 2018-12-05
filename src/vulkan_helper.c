@@ -1,4 +1,3 @@
-#include "vulkan_helper.h"
 
 #include <errno.h>
 #include <stdbool.h>
@@ -12,6 +11,77 @@
 #include "constants.h"
 #include "errors.h"
 #include "utils.h"
+
+#include "vulkan_helper.h"
+
+char* vkstrerror(VkResult err)
+{
+	switch (err) {
+		case VK_SUCCESS :
+		return ("VK_SUCCESS");
+		case VK_NOT_READY :
+		return ("VK_NOT_READY");
+		case VK_TIMEOUT :
+		return ("VK_TIMEOUT ");
+		case VK_EVENT_SET :
+		return ("VK_EVENT_SET ");
+		case VK_EVENT_RESET :
+		return ("VK_EVENT_RESET");
+		case VK_INCOMPLETE :
+		return ("VK_INCOMPLETE");
+		case VK_ERROR_OUT_OF_HOST_MEMORY :
+		return ("VK_ERROR_OUT_OF_HOST_MEMORY");
+		case VK_ERROR_OUT_OF_DEVICE_MEMORY :
+		return ("VK_ERROR_OUT_OF_DEVICE_MEMORY");
+		case VK_ERROR_INITIALIZATION_FAILED :
+		return ("VK_ERROR_INITIALIZATION_FAILED");
+		case VK_ERROR_DEVICE_LOST :
+		return ("VK_ERROR_DEVICE_LOST");
+		case VK_ERROR_MEMORY_MAP_FAILED :
+		return ("VK_ERROR_MEMORY_MAP_FAILED");
+		case VK_ERROR_LAYER_NOT_PRESENT :
+		return ("VK_ERROR_LAYER_NOT_PRESENT");
+		case VK_ERROR_EXTENSION_NOT_PRESENT :
+		return ("VK_ERROR_EXTENSION_NOT_PRESENT");
+		case VK_ERROR_FEATURE_NOT_PRESENT :
+		return ("VK_ERROR_FEATURE_NOT_PRESENT");
+		case VK_ERROR_INCOMPATIBLE_DRIVER :
+		return ("VK_ERROR_INCOMPATIBLE_DRIVER");
+		case VK_ERROR_TOO_MANY_OBJECTS :
+		return ("VK_ERROR_TOO_MANY_OBJECTS");
+		case VK_ERROR_FORMAT_NOT_SUPPORTED :
+		return ("VK_ERROR_FORMAT_NOT_SUPPORTED");
+		case VK_ERROR_FRAGMENTED_POOL :
+		return ("VK_ERROR_FRAGMENTED_POOL");
+		case VK_ERROR_OUT_OF_POOL_MEMORY :
+		return ("VK_ERROR_OUT_OF_POOL_MEMORY");
+		case VK_ERROR_INVALID_EXTERNAL_HANDLE :
+		return ("VK_ERROR_INVALID_EXTERNAL_HANDLE");
+		case VK_ERROR_SURFACE_LOST_KHR :
+		return ("VK_ERROR_SURFACE_LOST_KHR");
+		case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR :
+		return ("VK_ERROR_NATIVE_WINDOW_IN_USE_KHR");
+		case VK_SUBOPTIMAL_KHR:
+		return ("VK_SUBOPTIMAL_KHR");
+		case VK_ERROR_OUT_OF_DATE_KHR :
+		return ("VK_ERROR_OUT_OF_DATE_KHR");
+		case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR :
+		return ("VK_ERROR_INCOMPATIBLE_DISPLAY_KHR");
+		case VK_ERROR_VALIDATION_FAILED_EXT :
+		return ("VK_ERROR_VALIDATION_FAILED_EXT");
+		case VK_ERROR_INVALID_SHADER_NV :
+		return ("VK_ERROR_INVALID_SHADER_NV");
+		case VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT :
+		return ("VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT");
+		case VK_ERROR_FRAGMENTATION_EXT :
+		return ("VK_ERROR_FRAGMENTATION_EXT");
+		case VK_ERROR_NOT_PERMITTED_EXT :
+		return ("VK_ERROR_NOT_PERMITTED_EXT");
+		default:
+		return ("UNKNOWN_ERROR");
+	}
+	return ("UNKNOWN_ERROR");
+}
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -255,7 +325,7 @@ uint32_t getQueue(VkQueue* pQueue, const VkDevice device,
 
 uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 		const VkSwapchainKHR oldSwapChain,
-		const VkSurfaceFormatKHR preferredSurfaceFormat,
+		const VkSurfaceFormatKHR surfaceFormat,
 		const VkPhysicalDevice physicalDevice, const VkDevice device,
 		const VkSurfaceKHR surface, const VkExtent2D extent,
 		const uint32_t graphicsIndex, const uint32_t presentIndex) {
@@ -263,8 +333,8 @@ uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = surface;
 	createInfo.minImageCount = 2;
-	createInfo.imageFormat = preferredSurfaceFormat.format;
-	createInfo.imageColorSpace = preferredSurfaceFormat.colorSpace;
+	createInfo.imageFormat = surfaceFormat.format;
+	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
 	createInfo.imageArrayLayers = 1;
 	createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
@@ -355,14 +425,13 @@ uint32_t new_SwapChainImages(
 		uint32_t *pImageCount,
 		const VkDevice device, const VkSwapchainKHR swapChain) {
 	vkGetSwapchainImagesKHR(device, swapChain, pImageCount, NULL);
-	VkImage* tmp = malloc((*pImageCount) * sizeof(VkImage));
-	if (!tmp) {
-		errLog(FATAL, "failed to get swap chain images: %s", strerror(errno));
+	*ppSwapChainImages = malloc((*pImageCount) * sizeof(VkImage));
+	if (!*ppSwapChainImages) {
+		errLog(FATAL, "failed to get swap chain images: %s\n", strerror(errno));
 		panic();
-	} else {
-		*ppSwapChainImages = tmp;
 	}
-	vkGetSwapchainImagesKHR(device, swapChain, pImageCount, *ppSwapChainImages);
+	VkResult res = vkGetSwapchainImagesKHR(device, swapChain, pImageCount,
+			*ppSwapChainImages);
 
 	return (VK_SUCCESS);
 }
@@ -455,8 +524,7 @@ void delete_ShaderModule(VkShaderModule* pShaderModule, const VkDevice device) {
 }
 
 uint32_t new_RenderPass(VkRenderPass* pRenderPass, const VkDevice device,
-		const VkFormat swapChainImageFormat, const uint32_t dependencyCount,
-		const VkSubpassDependency *pDependencies) {
+		const VkFormat swapChainImageFormat) {
 	VkAttachmentDescription colorAttachment = { 0 };
 	colorAttachment.format = swapChainImageFormat;
 	colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
@@ -483,8 +551,17 @@ uint32_t new_RenderPass(VkRenderPass* pRenderPass, const VkDevice device,
 	renderPassInfo.subpassCount = 1;
 	renderPassInfo.pSubpasses = &subpass;
 
-	renderPassInfo.dependencyCount = dependencyCount;
-	renderPassInfo.pDependencies = pDependencies;
+	VkSubpassDependency dependency = { 0 };
+	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+	dependency.dstSubpass = 0;
+	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.srcAccessMask = 0;
+	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+			| VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+	renderPassInfo.dependencyCount = 1;
+	renderPassInfo.pDependencies = &dependency;
 
 	VkResult res = vkCreateRenderPass(device, &renderPassInfo, NULL,
 			pRenderPass);

@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include <vulkan.h>
-#define GLFW_DEFINE_VULKAN
+#define GLFW_INCLUDE_VULKAN
 #include <glfw3.h>
 
 #include "constants.h"
@@ -87,6 +87,7 @@ int main(void) {
 			deviceExtensionCount,
 			ppDeviceExtensionNames, layerCount, ppLayerNames);
 
+
 	/* get preferred format of screen*/
 	VkSurfaceFormatKHR surfaceFormat;
 	getPreferredSurfaceFormat(&surfaceFormat, physicalDevice, surface);
@@ -98,15 +99,18 @@ int main(void) {
 			swapChainExtent, graphicsIndex,
 			presentIndex);
 
+	glfwPollEvents();
 	uint32_t swapChainImageCount = 0;
 	VkImage* pSwapChainImages = NULL;
 	VkImageView* pSwapChainImageViews = NULL;
 	new_SwapChainImages(&pSwapChainImages, &swapChainImageCount, device,
 			swapChain);
+	glfwPollEvents(); /* Crashes over here TODO */
 	new_SwapChainImageViews(&pSwapChainImageViews, device, surfaceFormat.format,
 			swapChainImageCount,
 			pSwapChainImages);
 
+	glfwPollEvents();
 
 	VkShaderModule fragShaderModule;
 	{
@@ -160,10 +164,6 @@ int main(void) {
 	VkSemaphore renderFinishedSemaphore;
 	create_Semaphore(&imageAvailableSemaphore, device);
 	create_Semaphore(&renderFinishedSemaphore, device);
-
-
-
-
 
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {

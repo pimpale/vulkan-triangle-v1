@@ -24,6 +24,7 @@
 
 void errLog(int level, const char* message, ...);
 
+
 void panic();
 
 #endif /* ERRORS_H_ */
