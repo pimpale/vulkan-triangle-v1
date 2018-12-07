@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define _Xdebug
+
 #include <vulkan.h>
 #define GLFW_INCLUDE_VULKAN
 #include <glfw3.h>
@@ -100,17 +102,23 @@ int main(void) {
 			presentIndex);
 
 	glfwPollEvents();
+	glfwPollEvents();
+	glfwPollEvents();
+	glfwPollEvents();
+	glfwPollEvents();
+	glfwPollEvents();
+	glfwPollEvents();
+
 	uint32_t swapChainImageCount = 0;
 	VkImage* pSwapChainImages = NULL;
 	VkImageView* pSwapChainImageViews = NULL;
+
 	new_SwapChainImages(&pSwapChainImages, &swapChainImageCount, device,
 			swapChain);
-	glfwPollEvents(); /* Crashes over here TODO */
 	new_SwapChainImageViews(&pSwapChainImageViews, device, surfaceFormat.format,
 			swapChainImageCount,
 			pSwapChainImages);
 
-	glfwPollEvents();
 
 	VkShaderModule fragShaderModule;
 	{

@@ -80,7 +80,6 @@ char* vkstrerror(VkResult err)
 		default:
 		return ("UNKNOWN_ERROR");
 	}
-	return ("UNKNOWN_ERROR");
 }
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL
@@ -324,11 +323,15 @@ uint32_t getQueue(VkQueue* pQueue, const VkDevice device,
 }
 
 uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
+		uint32_t *pSwapChainImageCount,
 		const VkSwapchainKHR oldSwapChain,
 		const VkSurfaceFormatKHR surfaceFormat,
 		const VkPhysicalDevice physicalDevice, const VkDevice device,
 		const VkSurfaceKHR surface, const VkExtent2D extent,
 		const uint32_t graphicsIndex, const uint32_t presentIndex) {
+
+
+
 	VkSwapchainCreateInfoKHR createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = surface;
