@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define _Xdebug
-
 #include <vulkan.h>
 #define GLFW_INCLUDE_VULKAN
 #include <glfw3.h>
@@ -80,6 +78,7 @@ int main(void) {
 		}
 	}
 
+
 	/* Set extent (for now just window width and height) */
 	VkExtent2D swapChainExtent = { WINDOW_WIDTH, WINDOW_HEIGHT };
 
@@ -89,6 +88,12 @@ int main(void) {
 			deviceExtensionCount,
 			ppDeviceExtensionNames, layerCount, ppLayerNames);
 
+	VkQueue graphicsQueue;
+	getQueue(&graphicsQueue, device, graphicsIndex);
+	VkQueue computeQueue;
+	getQueue(&computeQueue, device, computeIndex);
+	VkQueue presentQueue;
+	getQueue(&presentQueue, device, presentIndex);
 
 	/* get preferred format of screen*/
 	VkSurfaceFormatKHR surfaceFormat;
@@ -169,10 +174,14 @@ int main(void) {
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {
 		glfwPollEvents();
+		drawFrame(device, swapChain, pGraphicsCommandBuffers,
+				imageAvailableSemaphore, renderFinishedSemaphore, graphicsQueue,
+				presentQueue);
 	}
 
 
 	/*cleanup*/
+	vkDeviceWaitIdle(device);
 	delete_Semaphore(&renderFinishedSemaphore, device);
 	delete_Semaphore(&imageAvailableSemaphore, device);
 	delete_GraphicsCommandBuffers(&pGraphicsCommandBuffers);

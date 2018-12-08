@@ -88,6 +88,9 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
 		void *pUserData) {
 
+	UNUSED(messageType);
+	UNUSED(pUserData);
+
 	/* set severity */
 	uint32_t errcode;
 	switch (messageSeverity) {
@@ -839,7 +842,11 @@ uint32_t new_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers,
 		renderPassInfo.renderArea.offset = (VkOffset2D ) { 0, 0 };
 		renderPassInfo.renderArea.extent = swapChainExtent;
 
-		VkClearValue clearColor = { 0.0f, 0.0f, 0.0f, 1.0f };
+		VkClearValue clearColor;
+		clearColor.color.float32[0] = 0.0f;
+		clearColor.color.float32[1] = 0.0f;
+		clearColor.color.float32[2] = 0.0f;
+		clearColor.color.float32[3] = 0.0f;
 
 		renderPassInfo.clearValueCount = 1;
 		renderPassInfo.pClearValues = &clearColor;
@@ -909,21 +916,10 @@ uint32_t drawFrame(const VkDevice device, const VkSwapchainKHR swapChain,
 
 	VkResult res = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 	if (res != VK_SUCCESS) {
-		errLog(ERROR, "failed to draw frame: failed to submit queue: %s",
+		errLog(ERROR, "failed to draw frame: failed to submit queue: %s\n",
 				vkstrerror(res));
 		panic();
 	}
-
-	VkSubpassDependency dependency = { 0 };
-	dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-	dependency.dstSubpass = 0;
-
-	dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.srcAccessMask = 0;
-
-	dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-	dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
-			| VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
 	VkPresentInfoKHR presentInfo = { 0 };
 	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -940,6 +936,7 @@ uint32_t drawFrame(const VkDevice device, const VkSwapchainKHR swapChain,
 	presentInfo.pResults = NULL;
 
 	vkQueuePresentKHR(presentQueue, &presentInfo);
+
 
 	return (VK_SUCCESS);
 }

@@ -121,4 +121,10 @@ uint32_t create_Semaphore(VkSemaphore* semaphore, const VkDevice device);
 
 void delete_Semaphore(VkSemaphore* semaphore, const VkDevice device);
 
+uint32_t drawFrame(const VkDevice device, const VkSwapchainKHR swapChain,
+		const VkCommandBuffer *pCommandBuffers,
+		const VkSemaphore imageAvailableSemaphore,
+		const VkSemaphore renderFinishedSemaphore, const VkQueue graphicsQueue,
+		const VkQueue presentQueue);
+
 #endif /* VULKAN_HELPER_H_ */

@@ -22,6 +22,9 @@
 #define FATAL_MSG "fatal"
 #define UNKNOWN_MSG "unknown severity"
 
+#define UNUSED(x) (void)(x)
+
+
 void errLog(int level, const char* message, ...);
 
 
