@@ -1,4 +1,3 @@
-
 #include <errno.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -114,7 +113,7 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		break;
 	}
 	/* log error */
-	errLog(errcode, "Vulkan validation layer: %s\n", pCallbackData->pMessage);
+	errLog(errcode, "Vulkan validation layer: %s", pCallbackData->pMessage);
 	return (VK_FALSE);
 }
 uint32_t new_Instance(VkInstance* pInstance,
@@ -174,7 +173,7 @@ uint32_t new_DebugCallback(VkDebugUtilsMessengerEXT* pCallback,
 			(PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(
 					instance, "vkCreateDebugUtilsMessengerEXT");
 	if (!func) {
-		errLog(FATAL, "Failed to find extension function\n");
+		errLog(FATAL, "Failed to find extension function");
 		panic();
 	}
 	VkResult result = func(instance, &createInfo, NULL, pCallback);
@@ -227,7 +226,7 @@ uint32_t getPhysicalDevice(VkPhysicalDevice* pDevice, const VkInstance instance)
 	}
 
 	if (selectedDevice == VK_NULL_HANDLE) {
-		errLog(ERROR, "no suitable Vulkan device found\n");
+		errLog(ERROR, "no suitable Vulkan device found");
 		panic();
 	}
 	free(arr);
@@ -243,6 +242,10 @@ uint32_t getDeviceQueueIndex(uint32_t *deviceQueueIndex,
 		VkPhysicalDevice device, VkQueueFlags bit) {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, NULL);
+	if (queueFamilyCount == 0) {
+		errLog(WARN, "no device queues found");
+		return (ENOTSUPPORTED);
+	}
 	VkQueueFamilyProperties *arr =
 			malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	if (!arr) {
@@ -258,17 +261,22 @@ uint32_t getDeviceQueueIndex(uint32_t *deviceQueueIndex,
 		}
 	}
 	free(arr);
-	return (ENODEV);
+	errLog(WARN, "no suitable device queue found");
+	return (ENOTSUPPORTED);
 }
 
 uint32_t getPresentQueueIndex(uint32_t* pPresentQueueIndex,
 		const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface) {
 	uint32_t queueFamilyCount = 0;
 	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, NULL);
+	if (queueFamilyCount == 0) {
+		errLog(WARN, "no queues found");
+		return (ENOTSUPPORTED);
+	}
 	VkQueueFamilyProperties *arr =
 			malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	if (!arr) {
-		errLog(FATAL, "Failed to get present queue index: %s\n",
+		errLog(FATAL, "Failed to get present queue index: %s",
 				strerror(errno));
 		panic();
 	}
@@ -283,7 +291,7 @@ uint32_t getPresentQueueIndex(uint32_t* pPresentQueueIndex,
 		}
 	}
 	free(arr);
-	return (ENODEV);
+	return (ENOTSUPPORTED);
 }
 
 uint32_t new_Device(VkDevice* pDevice,
@@ -402,6 +410,7 @@ uint32_t getPreferredSurfaceFormat(VkSurfaceFormatKHR* pSurfaceFormat,
 				&formatCount, pSurfaceFormats);
 	} else {
 		pSurfaceFormats = NULL;
+		return (ENOTSUPPORTED);
 	}
 
 	VkSurfaceFormatKHR preferredFormat;
@@ -421,7 +430,7 @@ uint32_t getPreferredSurfaceFormat(VkSurfaceFormatKHR* pSurfaceFormat,
 			}
 		}
 	} else {
-		errLog(ERROR, "no formats available\n");
+		errLog(ERROR, "no formats available");
 		panic();
 	}
 
@@ -437,15 +446,24 @@ uint32_t new_SwapChainImages(
 		uint32_t *pImageCount,
 		const VkDevice device, const VkSwapchainKHR swapChain) {
 	vkGetSwapchainImagesKHR(device, swapChain, pImageCount, NULL);
+
+	if (pImageCount == 0) {
+		errLog(WARN, "cannot create zero images");
+		return (EUNSAFE);
+	}
+
 	*ppSwapChainImages = malloc((*pImageCount) * sizeof(VkImage));
 	if (!*ppSwapChainImages) {
-		errLog(FATAL, "failed to get swap chain images: %s\n", strerror(errno));
+		errLog(FATAL, "failed to get swap chain images: %s", strerror(errno));
 		panic();
 	}
 	VkResult res = vkGetSwapchainImagesKHR(device, swapChain, pImageCount,
 			*ppSwapChainImages);
-
-	return (VK_SUCCESS);
+	if (res != 0) {
+		errLog(WARN, "failed to get swap chain images, error: %s",
+				vkstrerror(res));
+	}
+	return (res);
 }
 
 void delete_SwapChainImages(VkImage **ppImages) {
@@ -486,6 +504,10 @@ void delete_ImageView(VkImageView *pImageView, VkDevice device) {
 uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 		const VkDevice device, const VkFormat format, const uint32_t imageCount,
 		const VkImage* pSwapChainImages) {
+	if (imageCount == 0) {
+		errLog(WARN, "cannot create zero image views");
+		return (EUNSAFE);
+	}
 	VkImageView* pImageViews = malloc(imageCount * sizeof(VkImageView));
 	if (!pImageViews) {
 		errLog(FATAL, "could not create swap chain image views: %s",
@@ -578,7 +600,7 @@ uint32_t new_RenderPass(VkRenderPass* pRenderPass, const VkDevice device,
 	VkResult res = vkCreateRenderPass(device, &renderPassInfo, NULL,
 			pRenderPass);
 	if (res != VK_SUCCESS) {
-		errLog(FATAL, "Could not create render pass, error: %d\n",
+		errLog(FATAL, "Could not create render pass, error: %d",
 				(uint32_t) res);
 		panic();
 	}
@@ -598,7 +620,7 @@ uint32_t new_PipelineLayout(VkPipelineLayout *pPipelineLayout,
 	VkResult res = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL,
 			pPipelineLayout);
 	if (res != VK_SUCCESS) {
-		errLog(FATAL, "failed to create pipeline layout with error: %d\n",
+		errLog(FATAL, "failed to create pipeline layout with error: %d",
 				(uint32_t) res);
 		panic();
 	}
@@ -717,7 +739,7 @@ uint32_t new_GraphicsPipeline(VkPipeline* pGraphicsPipeline,
 
 	if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
 	NULL, pGraphicsPipeline) != VK_SUCCESS) {
-		errLog(FATAL, "failed to create graphics pipeline!\n");
+		errLog(FATAL, "failed to create graphics pipeline!");
 		panic();
 	}
 	return (VK_SUCCESS);
@@ -810,7 +832,7 @@ uint32_t new_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers,
 	VkCommandBuffer* pCommandBuffers = malloc(
 			swapChainFramebufferCount * sizeof(VkCommandBuffer));
 	if (!pCommandBuffers) {
-		errLog(FATAL, "Failed to create graphics command buffers: %s\n",
+		errLog(FATAL, "Failed to create graphics command buffers: %s",
 				strerror(errno));
 		panic();
 	}
@@ -819,7 +841,7 @@ uint32_t new_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers,
 			pCommandBuffers);
 	if (ret != VK_SUCCESS) {
 		errLog(FATAL,
-				"Failed to create graphics command buffers, error code: %d\n",
+				"Failed to create graphics command buffers, error code: %d",
 				(uint32_t) ret);
 		panic();
 	}
@@ -831,7 +853,7 @@ uint32_t new_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers,
 
 		if (vkBeginCommandBuffer(pCommandBuffers[i], &beginInfo)
 				!= VK_SUCCESS) {
-			errLog(FATAL, "Failed to record into graphics command buffer\n");
+			errLog(FATAL, "Failed to record into graphics command buffer");
 			panic();
 		}
 
@@ -879,28 +901,100 @@ void delete_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers) {
 	*ppCommandBuffers = NULL;
 }
 
-uint32_t create_Semaphore(VkSemaphore* semaphore, const VkDevice device) {
+uint32_t new_Semaphore(VkSemaphore* pSemaphore, const VkDevice device) {
 	VkSemaphoreCreateInfo semaphoreInfo = { 0 };
 	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-	return (vkCreateSemaphore(device, &semaphoreInfo, NULL, semaphore));
+	return (vkCreateSemaphore(device, &semaphoreInfo, NULL, pSemaphore));
 }
 
-void delete_Semaphore(VkSemaphore* semaphore, const VkDevice device) {
-	vkDestroySemaphore(device, *semaphore, NULL);
+void delete_Semaphore(VkSemaphore* pSemaphore, const VkDevice device) {
+	vkDestroySemaphore(device, *pSemaphore, NULL);
 }
 
-uint32_t drawFrame(const VkDevice device, const VkSwapchainKHR swapChain,
+uint32_t new_Semaphores(VkSemaphore** ppSemaphores,
+		const uint32_t semaphoreCount, const VkDevice device) {
+	if (semaphoreCount == 0) {
+		errLog(WARN, "failed to create semaphores: %s",
+				"Failed to allocate 0 bytes of memory");
+	}
+	*ppSemaphores = malloc(semaphoreCount * sizeof(VkSemaphore));
+	if (*ppSemaphores == NULL) {
+		errLog(FATAL, "Failed to create semaphores: %s", strerror(errno));
+	}
+
+	for (uint32_t i = 0; i < semaphoreCount; i++) {
+		new_Semaphore(&(*ppSemaphores)[i], device);
+	}
+	return (ESUCCESS);
+}
+
+void delete_Semaphores(VkSemaphore** ppSemaphores,
+		const uint32_t semaphoreCount, const VkDevice device) {
+	for (uint32_t i = 0; i < semaphoreCount; i++) {
+		delete_Semaphore(&((*ppSemaphores)[i]), device);
+	}
+	free(*ppSemaphores);
+}
+
+uint32_t new_Fence(VkFence* pFence, const VkDevice device) {
+	VkFenceCreateInfo fenceInfo = { 0 };
+	fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+	fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+	return (vkCreateFence(device, &fenceInfo, NULL, pFence));
+}
+
+void delete_Fence(VkFence* pFence, const VkDevice device) {
+	vkDestroyFence(device, *pFence, NULL);
+}
+
+uint32_t new_Fences(VkFence **ppFences, const uint32_t fenceCount,
+		const VkDevice device) {
+	if (fenceCount == 0) {
+		errLog(WARN, "cannot allocate 0 bytes of memory");
+		return (EUNSAFE);
+	}
+	*ppFences = malloc(fenceCount * sizeof(VkDevice));
+	if (!*ppFences) {
+		errLog(FATAL, "failed to create memory fence; %s", strerror(errno));
+		panic();
+	}
+
+	for (uint32_t i = 0; i < fenceCount; i++) {
+		new_Fence(&(*ppFences)[i], device);
+	}
+	return (ESUCCESS);
+}
+
+void delete_Fences(VkFence **ppFences, const uint32_t fenceCount,
+		const VkDevice device) {
+	for (uint32_t i = 0; i < fenceCount; i++) {
+		delete_Fence(&(*ppFences)[i], device);
+	}
+	free(*ppFences);
+}
+
+uint32_t drawFrame(uint32_t* pCurrentFrame, const uint32_t maxFramesInFlight,
+		const VkDevice device,
+		const VkSwapchainKHR swapChain,
 		const VkCommandBuffer *pCommandBuffers,
-		const VkSemaphore imageAvailableSemaphore,
-		const VkSemaphore renderFinishedSemaphore, const VkQueue graphicsQueue,
+		const VkFence *pInFlightFences,
+		const VkSemaphore *pImageAvailableSemaphores,
+		const VkSemaphore *pRenderFinishedSemaphores,
+		const VkQueue graphicsQueue,
 		const VkQueue presentQueue) {
+	vkWaitForFences(device, 1, &pInFlightFences[*pCurrentFrame], VK_TRUE,
+			UINT64_MAX);
+	vkResetFences(device, 1, &pInFlightFences[*pCurrentFrame]);
 	uint32_t imageIndex;
 	vkAcquireNextImageKHR(device, swapChain, UINT64_MAX,
-			imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+			pImageAvailableSemaphores[*pCurrentFrame], VK_NULL_HANDLE,
+			&imageIndex);
+
 	VkSubmitInfo submitInfo = { 0 };
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-	VkSemaphore waitSemaphores[] = { imageAvailableSemaphore };
+	VkSemaphore waitSemaphores[] =
+			{ pImageAvailableSemaphores[*pCurrentFrame] };
 	VkPipelineStageFlags waitStages[] = {
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 	submitInfo.waitSemaphoreCount = 1;
@@ -910,14 +1004,16 @@ uint32_t drawFrame(const VkDevice device, const VkSwapchainKHR swapChain,
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &pCommandBuffers[imageIndex];
 
-	VkSemaphore signalSemaphores[] = { renderFinishedSemaphore };
+	VkSemaphore signalSemaphores[] =
+			{ pRenderFinishedSemaphores[*pCurrentFrame] };
 	submitInfo.signalSemaphoreCount = 1;
 	submitInfo.pSignalSemaphores = signalSemaphores;
 
-	VkResult res = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-	if (res != VK_SUCCESS) {
-		errLog(ERROR, "failed to draw frame: failed to submit queue: %s\n",
-				vkstrerror(res));
+	VkResult queueSubmitResult = vkQueueSubmit(graphicsQueue, 1, &submitInfo,
+			pInFlightFences[*pCurrentFrame]);
+	if (queueSubmitResult != VK_SUCCESS) {
+		errLog(FATAL, "failed to submit queue: %s",
+				vkstrerror(queueSubmitResult));
 		panic();
 	}
 
@@ -930,14 +1026,12 @@ uint32_t drawFrame(const VkDevice device, const VkSwapchainKHR swapChain,
 	VkSwapchainKHR swapChains[] = { swapChain };
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = swapChains;
+
 	presentInfo.pImageIndices = &imageIndex;
 
-	/*optional*/
-	presentInfo.pResults = NULL;
-
 	vkQueuePresentKHR(presentQueue, &presentInfo);
+	*pCurrentFrame = (*pCurrentFrame + 1) % maxFramesInFlight;
 
-
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 

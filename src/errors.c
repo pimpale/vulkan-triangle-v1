@@ -60,7 +60,7 @@ void errLog(int level, const char* message, ...) {
 	vsnprintf(message_formatted, MAX_PRINT_LENGTH, message, args);
 	va_end(args);
 
-	fprintf(out, "%s: %s: %s", APPNAME, errmsg, message_formatted);
+	fprintf(out, "%s: %s: %s\n", APPNAME, errmsg, message_formatted);
 }
 
 

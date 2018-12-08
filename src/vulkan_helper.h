@@ -117,14 +117,31 @@ uint32_t new_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers,
 
 void delete_GraphicsCommandBuffers(VkCommandBuffer **ppCommandBuffers);
 
-uint32_t create_Semaphore(VkSemaphore* semaphore, const VkDevice device);
+uint32_t new_Semaphore(VkSemaphore* pSemaphore, const VkDevice device);
 
-void delete_Semaphore(VkSemaphore* semaphore, const VkDevice device);
+void delete_Semaphore(VkSemaphore* pSemaphore, const VkDevice device);
 
-uint32_t drawFrame(const VkDevice device, const VkSwapchainKHR swapChain,
+uint32_t new_Semaphores(VkSemaphore** ppSemaphores,
+		const uint32_t semaphoreCount, const VkDevice device);
+
+void delete_Semaphores(VkSemaphore** ppSemaphores,
+		const uint32_t semaphoreCount, const VkDevice device);
+
+uint32_t new_Fences(VkFence **ppFences, const uint32_t fenceCount,
+		const VkDevice device);
+
+void delete_Fences(VkFence **ppFences, const uint32_t fenceCount,
+		const VkDevice device);
+
+
+uint32_t drawFrame(uint32_t* pCurrentFrame, const uint32_t maxFramesInFlight,
+		const VkDevice device,
+		const VkSwapchainKHR swapChain,
 		const VkCommandBuffer *pCommandBuffers,
-		const VkSemaphore imageAvailableSemaphore,
-		const VkSemaphore renderFinishedSemaphore, const VkQueue graphicsQueue,
+		const VkFence *pInFlightFences,
+		const VkSemaphore *pImageAvailableSemaphores,
+		const VkSemaphore *pRenderFinishedSemaphores,
+		const VkQueue graphicsQueue,
 		const VkQueue presentQueue);
 
 #endif /* VULKAN_HELPER_H_ */

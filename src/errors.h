@@ -24,6 +24,11 @@
 
 #define UNUSED(x) (void)(x)
 
+#define ESUCCESS 0
+#define ENOTSUPPORTED 1
+#define EUNSAFE 2
+#define EBADARGS 3
+#define EOPFAIL 4
 
 void errLog(int level, const char* message, ...);
 

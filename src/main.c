@@ -166,24 +166,30 @@ int main(void) {
 			graphicsPipeline, commandPool, swapChainExtent, swapChainImageCount,
 			pSwapChainFramebuffers);
 
-	VkSemaphore imageAvailableSemaphore;
-	VkSemaphore renderFinishedSemaphore;
-	create_Semaphore(&imageAvailableSemaphore, device);
-	create_Semaphore(&renderFinishedSemaphore, device);
+	VkSemaphore* pImageAvailableSemaphores;
+	VkSemaphore* pRenderFinishedSemaphores;
+	VkFence *pInFlightFences;
+	new_Semaphores(&pImageAvailableSemaphores, swapChainImageCount, device);
+	new_Semaphores(&pRenderFinishedSemaphores, swapChainImageCount, device);
+	new_Fences(&pInFlightFences, swapChainImageCount, device);
 
+	uint32_t currentFrame = 0;
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {
 		glfwPollEvents();
-		drawFrame(device, swapChain, pGraphicsCommandBuffers,
-				imageAvailableSemaphore, renderFinishedSemaphore, graphicsQueue,
+		drawFrame(&currentFrame, 2, device, swapChain, pGraphicsCommandBuffers,
+				pInFlightFences,
+				pImageAvailableSemaphores,
+				pRenderFinishedSemaphores,
+				graphicsQueue,
 				presentQueue);
 	}
 
-
 	/*cleanup*/
 	vkDeviceWaitIdle(device);
-	delete_Semaphore(&renderFinishedSemaphore, device);
-	delete_Semaphore(&imageAvailableSemaphore, device);
+	delete_Fences(&pInFlightFences, swapChainImageCount, device);
+	delete_Semaphores(&pRenderFinishedSemaphores, swapChainImageCount, device);
+	delete_Semaphores(&pImageAvailableSemaphores, swapChainImageCount, device);
 	delete_GraphicsCommandBuffers(&pGraphicsCommandBuffers);
 	delete_CommandPool(&commandPool, device);
 	delete_SwapChainFramebuffers(&pSwapChainFramebuffers, swapChainImageCount,
