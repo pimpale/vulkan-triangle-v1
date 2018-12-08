@@ -17,67 +17,67 @@
 char* vkstrerror(VkResult err)
 {
 	switch (err) {
-		case VK_SUCCESS :
+	case VK_SUCCESS:
 		return ("VK_SUCCESS");
-		case VK_NOT_READY :
+	case VK_NOT_READY:
 		return ("VK_NOT_READY");
-		case VK_TIMEOUT :
+	case VK_TIMEOUT:
 		return ("VK_TIMEOUT ");
-		case VK_EVENT_SET :
+	case VK_EVENT_SET:
 		return ("VK_EVENT_SET ");
-		case VK_EVENT_RESET :
+	case VK_EVENT_RESET:
 		return ("VK_EVENT_RESET");
-		case VK_INCOMPLETE :
+	case VK_INCOMPLETE:
 		return ("VK_INCOMPLETE");
-		case VK_ERROR_OUT_OF_HOST_MEMORY :
+	case VK_ERROR_OUT_OF_HOST_MEMORY:
 		return ("VK_ERROR_OUT_OF_HOST_MEMORY");
-		case VK_ERROR_OUT_OF_DEVICE_MEMORY :
+	case VK_ERROR_OUT_OF_DEVICE_MEMORY:
 		return ("VK_ERROR_OUT_OF_DEVICE_MEMORY");
-		case VK_ERROR_INITIALIZATION_FAILED :
+	case VK_ERROR_INITIALIZATION_FAILED:
 		return ("VK_ERROR_INITIALIZATION_FAILED");
-		case VK_ERROR_DEVICE_LOST :
+	case VK_ERROR_DEVICE_LOST:
 		return ("VK_ERROR_DEVICE_LOST");
-		case VK_ERROR_MEMORY_MAP_FAILED :
+	case VK_ERROR_MEMORY_MAP_FAILED:
 		return ("VK_ERROR_MEMORY_MAP_FAILED");
-		case VK_ERROR_LAYER_NOT_PRESENT :
+	case VK_ERROR_LAYER_NOT_PRESENT:
 		return ("VK_ERROR_LAYER_NOT_PRESENT");
-		case VK_ERROR_EXTENSION_NOT_PRESENT :
+	case VK_ERROR_EXTENSION_NOT_PRESENT:
 		return ("VK_ERROR_EXTENSION_NOT_PRESENT");
-		case VK_ERROR_FEATURE_NOT_PRESENT :
+	case VK_ERROR_FEATURE_NOT_PRESENT:
 		return ("VK_ERROR_FEATURE_NOT_PRESENT");
-		case VK_ERROR_INCOMPATIBLE_DRIVER :
+	case VK_ERROR_INCOMPATIBLE_DRIVER:
 		return ("VK_ERROR_INCOMPATIBLE_DRIVER");
-		case VK_ERROR_TOO_MANY_OBJECTS :
+	case VK_ERROR_TOO_MANY_OBJECTS:
 		return ("VK_ERROR_TOO_MANY_OBJECTS");
-		case VK_ERROR_FORMAT_NOT_SUPPORTED :
+	case VK_ERROR_FORMAT_NOT_SUPPORTED:
 		return ("VK_ERROR_FORMAT_NOT_SUPPORTED");
-		case VK_ERROR_FRAGMENTED_POOL :
+	case VK_ERROR_FRAGMENTED_POOL:
 		return ("VK_ERROR_FRAGMENTED_POOL");
-		case VK_ERROR_OUT_OF_POOL_MEMORY :
+	case VK_ERROR_OUT_OF_POOL_MEMORY:
 		return ("VK_ERROR_OUT_OF_POOL_MEMORY");
-		case VK_ERROR_INVALID_EXTERNAL_HANDLE :
+	case VK_ERROR_INVALID_EXTERNAL_HANDLE:
 		return ("VK_ERROR_INVALID_EXTERNAL_HANDLE");
-		case VK_ERROR_SURFACE_LOST_KHR :
+	case VK_ERROR_SURFACE_LOST_KHR:
 		return ("VK_ERROR_SURFACE_LOST_KHR");
-		case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR :
+	case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:
 		return ("VK_ERROR_NATIVE_WINDOW_IN_USE_KHR");
-		case VK_SUBOPTIMAL_KHR:
+	case VK_SUBOPTIMAL_KHR:
 		return ("VK_SUBOPTIMAL_KHR");
-		case VK_ERROR_OUT_OF_DATE_KHR :
+	case VK_ERROR_OUT_OF_DATE_KHR:
 		return ("VK_ERROR_OUT_OF_DATE_KHR");
-		case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR :
+	case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:
 		return ("VK_ERROR_INCOMPATIBLE_DISPLAY_KHR");
-		case VK_ERROR_VALIDATION_FAILED_EXT :
+	case VK_ERROR_VALIDATION_FAILED_EXT:
 		return ("VK_ERROR_VALIDATION_FAILED_EXT");
-		case VK_ERROR_INVALID_SHADER_NV :
+	case VK_ERROR_INVALID_SHADER_NV:
 		return ("VK_ERROR_INVALID_SHADER_NV");
-		case VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT :
+	case VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT:
 		return ("VK_ERROR_INVALID_DRM_FORMAT_MODIFIER_PLANE_LAYOUT_EXT");
-		case VK_ERROR_FRAGMENTATION_EXT :
+	case VK_ERROR_FRAGMENTATION_EXT:
 		return ("VK_ERROR_FRAGMENTATION_EXT");
-		case VK_ERROR_NOT_PERMITTED_EXT :
+	case VK_ERROR_NOT_PERMITTED_EXT:
 		return ("VK_ERROR_NOT_PERMITTED_EXT");
-		default:
+	default:
 		return ("UNKNOWN_ERROR");
 	}
 }
@@ -219,6 +219,7 @@ uint32_t getPhysicalDevice(VkPhysicalDevice* pDevice, const VkInstance instance)
 				VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
 		if (ret == VK_SUCCESS) {
 			selectedDevice = arr[i];
+			break;
 		}
 	}
 
@@ -330,12 +331,20 @@ uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 		const VkSurfaceKHR surface, const VkExtent2D extent,
 		const uint32_t graphicsIndex, const uint32_t presentIndex) {
 
+	VkSurfaceCapabilitiesKHR capabilities;
+	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
+			&capabilities);
 
+	*pSwapChainImageCount = capabilities.minImageCount + 1;
+	if (capabilities.maxImageCount > 0
+			&& *pSwapChainImageCount > capabilities.maxImageCount) {
+		*pSwapChainImageCount = capabilities.maxImageCount;
+	}
 
 	VkSwapchainCreateInfoKHR createInfo = { 0 };
 	createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
 	createInfo.surface = surface;
-	createInfo.minImageCount = 2;
+	createInfo.minImageCount = *pSwapChainImageCount;
 	createInfo.imageFormat = surfaceFormat.format;
 	createInfo.imageColorSpace = surfaceFormat.colorSpace;
 	createInfo.imageExtent = extent;
@@ -353,10 +362,7 @@ uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 		createInfo.pQueueFamilyIndices = NULL; /* Optional */
 	}
 
-	VkSurfaceCapabilitiesKHR surfaceCapabilities;
-	vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
-			&surfaceCapabilities);
-	createInfo.preTransform = surfaceCapabilities.currentTransform;
+	createInfo.preTransform = capabilities.currentTransform;
 	createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 	/* guaranteed to be available */
 	createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;

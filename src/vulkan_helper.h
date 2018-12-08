@@ -11,16 +11,6 @@
 #include <stdint.h>
 #include <vulkan.h>
 
-
-/*struct SwapChainInfo {
-	VkSurfaceCapabilitiesKHR surfaceCapabilities;
-	uint32_t formatCount;
-	VkSurfaceFormatKHR* pFormats;
-	uint32_t presentModeCount;
-	VkPresentModeKHR* pPresentModes;
-	VkSurfaceFormatKHR preferredFormat;
- }; */
-
 uint32_t new_Instance(VkInstance* pInstance,
 		const uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
@@ -59,11 +49,13 @@ uint32_t getPreferredSurfaceFormat(VkSurfaceFormatKHR* pSurfaceFormat,
 		const VkPhysicalDevice physicalDevice, const VkSurfaceKHR surface);
 
 uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
+		uint32_t *pSwapChainImageCount,
 		const VkSwapchainKHR oldSwapChain,
-		const VkSurfaceFormatKHR preferredSurfaceFormat,
+		const VkSurfaceFormatKHR surfaceFormat,
 		const VkPhysicalDevice physicalDevice, const VkDevice device,
 		const VkSurfaceKHR surface, const VkExtent2D extent,
 		const uint32_t graphicsIndex, const uint32_t presentIndex);
+
 
 void delete_SwapChain(VkSwapchainKHR* pSwapChain, const VkDevice device);
 

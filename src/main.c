@@ -96,20 +96,13 @@ int main(void) {
 
 	/*Create swap chain */
 	VkSwapchainKHR swapChain;
-	new_SwapChain(&swapChain, VK_NULL_HANDLE, surfaceFormat, physicalDevice,
+	uint32_t swapChainImageCount = 0;
+	new_SwapChain(&swapChain, &swapChainImageCount, VK_NULL_HANDLE,
+			surfaceFormat, physicalDevice,
 			device, surface,
 			swapChainExtent, graphicsIndex,
 			presentIndex);
 
-	glfwPollEvents();
-	glfwPollEvents();
-	glfwPollEvents();
-	glfwPollEvents();
-	glfwPollEvents();
-	glfwPollEvents();
-	glfwPollEvents();
-
-	uint32_t swapChainImageCount = 0;
 	VkImage* pSwapChainImages = NULL;
 	VkImageView* pSwapChainImageViews = NULL;
 
