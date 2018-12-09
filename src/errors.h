@@ -29,6 +29,7 @@
 #define EUNSAFE 2
 #define EBADARGS 3
 #define EOPFAIL 4
+#define EOUTOFDATE 5
 
 void errLog(int level, const char* message, ...);
 

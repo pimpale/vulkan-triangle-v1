@@ -177,12 +177,18 @@ int main(void) {
 	/*wait till close*/
 	while (!glfwWindowShouldClose(pWindow)) {
 		glfwPollEvents();
-		drawFrame(&currentFrame, 2, device, swapChain, pGraphicsCommandBuffers,
+		uint32_t result = drawFrame(&currentFrame, 2, device, swapChain,
+				pGraphicsCommandBuffers,
 				pInFlightFences,
 				pImageAvailableSemaphores,
 				pRenderFinishedSemaphores,
 				graphicsQueue,
 				presentQueue);
+
+		if (result == EOUTOFDATE) {
+
+		}
+
 	}
 
 	/*cleanup*/

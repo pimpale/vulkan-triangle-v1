@@ -145,7 +145,7 @@ uint32_t new_Instance(VkInstance* pInstance,
 				(uint32_t) result);
 		panic();
 	}
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 void delete_Instance(VkInstance *pInstance) {
@@ -182,7 +182,7 @@ uint32_t new_DebugCallback(VkDebugUtilsMessengerEXT* pCallback,
 				(uint32_t) result);
 		panic();
 	}
-	return (VK_SUCCESS);
+	return (ENOTSUPPORTED);
 }
 
 /**
@@ -202,8 +202,8 @@ uint32_t getPhysicalDevice(VkPhysicalDevice* pDevice, const VkInstance instance)
 	uint32_t deviceCount = 0;
 	VkResult res = vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
 	if (res != VK_SUCCESS || deviceCount == 0) {
-		errLog(FATAL, "no Vulkan capable device found");
-		panic();
+		errLog(WARN, "no Vulkan capable device found");
+		return (ENOTSUPPORTED);
 	}
 	VkPhysicalDevice *arr = malloc(deviceCount * sizeof(VkPhysicalDevice));
 	if (!arr) {
@@ -226,12 +226,12 @@ uint32_t getPhysicalDevice(VkPhysicalDevice* pDevice, const VkInstance instance)
 	}
 
 	if (selectedDevice == VK_NULL_HANDLE) {
-		errLog(ERROR, "no suitable Vulkan device found");
-		panic();
+		errLog(WARN, "no suitable Vulkan device found");
+		return (ENOTSUPPORTED);
 	}
 	free(arr);
 	*pDevice = selectedDevice;
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 void delete_Device(VkDevice *pDevice) {
@@ -257,7 +257,7 @@ uint32_t getDeviceQueueIndex(uint32_t *deviceQueueIndex,
 		if (arr[i].queueCount > 0 && (arr[0].queueFlags & bit)) {
 			free(arr);
 			*deviceQueueIndex = i;
-			return (VK_SUCCESS);
+			return (ESUCCESS);
 		}
 	}
 	free(arr);
@@ -287,7 +287,7 @@ uint32_t getPresentQueueIndex(uint32_t* pPresentQueueIndex,
 		if (surfaceSupport) {
 			*pPresentQueueIndex = i;
 			free(arr);
-			return (VK_SUCCESS);
+			return (ESUCCESS);
 		}
 	}
 	free(arr);
@@ -325,13 +325,13 @@ uint32_t new_Device(VkDevice* pDevice,
 				(uint32_t) res);
 		panic();
 	}
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 uint32_t getQueue(VkQueue* pQueue, const VkDevice device,
 		const uint32_t deviceQueueIndex) {
 	vkGetDeviceQueue(device, deviceQueueIndex, 0, pQueue);
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
@@ -385,7 +385,7 @@ uint32_t new_SwapChain(VkSwapchainKHR* pSwapChain,
 				(uint32_t) res);
 		panic();
 	}
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 void delete_SwapChain(VkSwapchainKHR *pSwapChain, const VkDevice device) {
@@ -459,11 +459,13 @@ uint32_t new_SwapChainImages(
 	}
 	VkResult res = vkGetSwapchainImagesKHR(device, swapChain, pImageCount,
 			*ppSwapChainImages);
-	if (res != 0) {
+	if (res != VK_SUCCESS) {
 		errLog(WARN, "failed to get swap chain images, error: %s",
 				vkstrerror(res));
+		return (EOPFAIL);
+	} else {
+		return (ESUCCESS);
 	}
-	return (res);
 }
 
 void delete_SwapChainImages(VkImage **ppImages) {
@@ -494,7 +496,7 @@ uint32_t new_ImageView(VkImageView *pImageView, const VkDevice device,
 				(uint32_t) ret);
 		panic();
 	}
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 void delete_ImageView(VkImageView *pImageView, VkDevice device) {
@@ -526,7 +528,7 @@ uint32_t new_SwapChainImageViews(VkImageView** ppImageViews,
 	}
 
 	*ppImageViews = pImageViews;
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 void delete_SwapChainImageViews(VkImageView** ppImageViews, uint32_t imageCount,
@@ -550,7 +552,7 @@ uint32_t new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
 	if (res != VK_SUCCESS) {
 		errLog(FATAL, "failed to create shader module");
 	}
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 void delete_ShaderModule(VkShaderModule* pShaderModule, const VkDevice device) {
@@ -604,7 +606,7 @@ uint32_t new_RenderPass(VkRenderPass* pRenderPass, const VkDevice device,
 				(uint32_t) res);
 		panic();
 	}
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 void delete_RenderPass(VkRenderPass *pRenderPass, const VkDevice device) {
@@ -624,7 +626,7 @@ uint32_t new_PipelineLayout(VkPipelineLayout *pPipelineLayout,
 				(uint32_t) res);
 		panic();
 	}
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 void delete_PipelineLayout(VkPipelineLayout *pPipelineLayout,
@@ -742,7 +744,7 @@ uint32_t new_GraphicsPipeline(VkPipeline* pGraphicsPipeline,
 		errLog(FATAL, "failed to create graphics pipeline!");
 		panic();
 	}
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 void delete_Pipeline(VkPipeline *pPipeline, const VkDevice device) {
@@ -762,7 +764,12 @@ uint32_t new_Framebuffer(VkFramebuffer *pFramebuffer, const VkDevice device,
 	framebufferInfo.layers = 1;
 	VkResult res = vkCreateFramebuffer(device, &framebufferInfo, NULL,
 			pFramebuffer);
-	return ((uint32_t) res);
+	if (res == VK_SUCCESS) {
+		return (ESUCCESS);
+	} else {
+		errLog(WARN, "failed to create framebuffers: %s", vkstrerror(res));
+		return (EOPFAIL);
+	}
 }
 
 void delete_Framebuffer(VkFramebuffer *pFramebuffer, VkDevice device) {
@@ -791,7 +798,7 @@ uint32_t new_SwapChainFramebuffers(VkFramebuffer** ppFramebuffers,
 	}
 
 	*ppFramebuffers = tmp;
-	return (VK_SUCCESS);
+	return (ESUCCESS);
 }
 
 void delete_SwapChainFramebuffers(VkFramebuffer** ppFramebuffers,
@@ -982,13 +989,34 @@ uint32_t drawFrame(uint32_t* pCurrentFrame, const uint32_t maxFramesInFlight,
 		const VkSemaphore *pRenderFinishedSemaphores,
 		const VkQueue graphicsQueue,
 		const VkQueue presentQueue) {
-	vkWaitForFences(device, 1, &pInFlightFences[*pCurrentFrame], VK_TRUE,
+	VkResult fenceWait = vkWaitForFences(device, 1,
+			&pInFlightFences[*pCurrentFrame], VK_TRUE,
 			UINT64_MAX);
-	vkResetFences(device, 1, &pInFlightFences[*pCurrentFrame]);
+	if (fenceWait != VK_SUCCESS) {
+		errLog(FATAL, "failed to wait for fence while drawing frame: %s",
+				vkstrerror(fenceWait));
+		panic();
+	}
+	VkResult fenceResetResult = vkResetFences(device, 1,
+			&pInFlightFences[*pCurrentFrame]);
+	if (fenceResetResult != VK_SUCCESS) {
+		errLog(FATAL, "failed to reset fence while drawing frame: %s",
+				vkstrerror(fenceResetResult));
+	}
 	uint32_t imageIndex;
-	vkAcquireNextImageKHR(device, swapChain, UINT64_MAX,
+	VkResult nextImageResult = vkAcquireNextImageKHR(device, swapChain,
+			UINT64_MAX,
 			pImageAvailableSemaphores[*pCurrentFrame], VK_NULL_HANDLE,
 			&imageIndex);
+
+	if (nextImageResult == VK_ERROR_OUT_OF_DATE_KHR) {
+		return (EOUTOFDATE);
+	}
+	else if (nextImageResult != VK_SUCCESS) {
+		errLog(FATAL, "failed to get next frame: %s",
+				vkstrerror(nextImageResult));
+		panic();
+	}
 
 	VkSubmitInfo submitInfo = { 0 };
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
