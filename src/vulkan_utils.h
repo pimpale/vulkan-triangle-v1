@@ -14,13 +14,42 @@
 #define GLFW_INCLUDE_VULKAN
 #include <glfw3.h>
 
+struct VulkanWindow {
+	VkInstance instance;
+	VkPhysicalDevice physicalDevice;
 
-uint32_t new_GLFWwindow(GLFWwindow** ppGLFWwindow);
+	GLFWwindow* pWindow;
+	VkSurfaceKHR surface;
 
-uint32_t new_Surface(VkSurfaceKHR *pSurface, GLFWwindow *window,
+	uint32_t graphicsIndex;
+	uint32_t computeIndex;
+	uint32_t presentIndex;
+
+	VkQueue graphicsQueue;
+	VkQueue computeQueue;
+	VkQueue presentQueue;
+
+	VkDevice device;
+
+	VkSurfaceFormatKHR surfaceFormat;
+
+	VkExtent2D swapChainExtent;
+	VkSwapchainKHR swapChain;
+
+	uint32_t swapChainImageCount;
+	/* One for each frame in the swap chain*/
+	VkImage* pSwapChainImages;
+	VkImageView* pSwapChainImageViews;
+	VkFramebuffer* pSwapChainFramebuffers;
+	VkCommandBuffer* pGraphicsCommandBuffers;
+	VkSemaphore* pImageAvailableSemaphores;
+	VkSemaphore* pRenderFinishedSemaphores;
+	VkFence* pInFlightFences;
+};
+
+uint32_t new_GLFWwindow(const GLFWwindow** ppGLFWwindow);
+
+uint32_t new_Surface(VkSurfaceKHR *pSurface, const GLFWwindow *pWindow,
 		const VkInstance instance);
-
-
-
 
 #endif VULKAN_UTILS_H_

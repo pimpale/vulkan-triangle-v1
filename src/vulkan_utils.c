@@ -17,38 +17,6 @@
 
 #include "vulkan_utils.h"
 
-struct VulkanWindow {
-	VkInstance instance;
-	VkPhysicalDevice physicalDevice;
-
-	GLFWwindow* pWindow;
-	VkSurfaceKHR surface;
-
-	uint32_t graphicsIndex;
-	uint32_t computeIndex;
-	uint32_t presentIndex;
-
-	VkQueue graphicsQueue;
-	VkQueue computeQueue;
-	VkQueue presentQueue;
-
-	VkDevice device;
-
-	VkSurfaceFormatKHR surfaceFormat;
-
-	VkExtent2D swapChainExtent;
-	VkSwapchainKHR swapChain;
-
-	uint32_t swapChainImageCount;
-	/* One for each frame in the swap chain*/
-	VkImage* pSwapChainImages;
-	VkImageView* pSwapChainImageViews;
-	VkFramebuffer* pSwapChainFramebuffers;
-	VkCommandBuffer* pGraphicsCommandBuffers;
-	VkSemaphore* pImageAvailableSemaphores;
-	VkSemaphore* pRenderFinishedSemaphores;
-	VkFence* pInFlightFences;
-};
 
 VkExtent2D getWindowExtent(const GLFWwindow* pWindow) {
 	int height;
