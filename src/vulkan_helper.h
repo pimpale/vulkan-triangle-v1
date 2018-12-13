@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <vulkan.h>
 
+char* vkstrerror(VkResult err);
+
 uint32_t new_Instance(VkInstance* pInstance,
 		const uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
@@ -143,5 +145,7 @@ uint32_t drawFrame(uint32_t* pCurrentFrame, const uint32_t maxFramesInFlight,
 		const VkSemaphore *pRenderFinishedSemaphores,
 		const VkQueue graphicsQueue,
 		const VkQueue presentQueue);
+
+void delete_Surface(VkSurfaceKHR* pSurface, const VkInstance instance);
 
 #endif /* VULKAN_HELPER_H_ */

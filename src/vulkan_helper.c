@@ -1,9 +1,7 @@
 #include <errno.h>
-#include <stdbool.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
+#include <stdlib.h>
 
 #include <vulkan.h>
 
@@ -282,9 +280,10 @@ uint32_t getPresentQueueIndex(uint32_t* pPresentQueueIndex,
 	}
 	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount, arr);
 	for (uint32_t i = 0; i < queueFamilyCount; i++) {
-		VkBool32 surfaceSupport = false;
-		vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &surfaceSupport);
-		if (surfaceSupport) {
+		VkBool32 surfaceSupport;
+		VkResult res = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i,
+				surface, &surfaceSupport);
+		if (res == VK_SUCCESS && surfaceSupport) {
 			*pPresentQueueIndex = i;
 			free(arr);
 			return (ESUCCESS);
@@ -1063,3 +1062,6 @@ uint32_t drawFrame(uint32_t* pCurrentFrame, const uint32_t maxFramesInFlight,
 	return (ESUCCESS);
 }
 
+void delete_Surface(VkSurfaceKHR* pSurface, const VkInstance instance) {
+	vkDestroySurfaceKHR(instance, *pSurface, NULL);
+}

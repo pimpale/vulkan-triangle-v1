@@ -57,8 +57,10 @@ int main(void) {
 	getPhysicalDevice(&physicalDevice, instance);
 
 	/* Create window and surface */
-	GLFWwindow *pWindow = createGlfwWindow();
-	VkSurfaceKHR surface = createSurface(pWindow, instance);
+	GLFWwindow *pWindow;
+	new_GLFWwindow(&pWindow);
+	VkSurfaceKHR surface;
+	new_Surface(&surface, pWindow, instance);
 
 	/* find queues on graphics device */
 	uint32_t graphicsIndex;
@@ -186,7 +188,7 @@ int main(void) {
 				presentQueue);
 
 		if (result == EOUTOFDATE) {
-
+			/* Delete swapchain, recreate */
 		}
 
 	}
@@ -208,6 +210,7 @@ int main(void) {
 	delete_SwapChainImages(&pSwapChainImages);
 	delete_SwapChain(&swapChain, device);
 	delete_Device(&device);
+	delete_Surface(&surface, instance);
 	delete_DebugCallback(&callback, instance);
 	delete_Instance(&instance);
 	free(ppExtensionNames);

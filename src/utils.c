@@ -19,22 +19,6 @@
 #include "errors.h"
 #include "utils.h"
 
-GLFWwindow *createGlfwWindow() {
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-	return (glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Vulkan", NULL, NULL));
-}
-
-VkSurfaceKHR createSurface(GLFWwindow *window, VkInstance instance) {
-	VkSurfaceKHR surface = { 0 };
-	VkResult res = glfwCreateWindowSurface(instance, window, NULL, &surface);
-	if (res != VK_SUCCESS) {
-		fprintf(stderr, "failed to create surface, quitting\n");
-		panic();
-	}
-	return (surface);
-}
-
 uint64_t getLength(FILE* f) {
 	uint64_t currentpos = ftell(f);
 	fseek(f, 0, SEEK_END);
@@ -45,7 +29,7 @@ uint64_t getLength(FILE* f) {
 /**
  * Mallocs
  */
-void readShaderFile(char* filename, uint32_t* length, uint32_t** code) {
+void readShaderFile(const char* filename, uint32_t* length, uint32_t** code) {
 	FILE* fp = fopen(filename, "rb");
 	if (!fp) {
 		errLog(FATAL, "could not read file\n");

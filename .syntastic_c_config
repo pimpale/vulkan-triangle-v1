@@ -1,0 +1,5 @@
+-I/usr/include/vulkan 
+-I/usr/include/GLFW
+-Wall 
+-Wpedantic 
+-Wextra

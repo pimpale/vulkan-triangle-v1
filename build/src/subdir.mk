@@ -7,19 +7,22 @@ C_SRCS += \
 ../src/errors.c \
 ../src/main.c \
 ../src/utils.c \
-../src/vulkan_helper.c 
+../src/vulkan_helper.c \
+../src/vulkan_utils.c 
 
 OBJS += \
 ./src/errors.o \
 ./src/main.o \
 ./src/utils.o \
-./src/vulkan_helper.o 
+./src/vulkan_helper.o \
+./src/vulkan_utils.o 
 
 C_DEPS += \
 ./src/errors.d \
 ./src/main.d \
 ./src/utils.d \
-./src/vulkan_helper.d 
+./src/vulkan_helper.d \
+./src/vulkan_utils.d 
 
 
 # Each subdirectory must supply rules for building sources it contributes
