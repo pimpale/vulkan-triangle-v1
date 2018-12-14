@@ -217,6 +217,7 @@ uint32_t getPhysicalDevice(VkPhysicalDevice *pDevice,
 	VkPhysicalDeviceProperties deviceProperties;
 	VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
 	for (uint32_t i = 0; i < deviceCount; i++) {
+					//TODO confirm it has required properties
 		vkGetPhysicalDeviceProperties(arr[i], &deviceProperties);
 		uint32_t deviceQueueIndex;
 		uint32_t ret = getDeviceQueueIndex(
@@ -668,7 +669,7 @@ uint32_t new_GraphicsPipeline(VkPipeline *pGraphicsPipeline,
 	fragShaderStageInfo.module = fragShaderModule;
 	fragShaderStageInfo.pName = "main";
 
-	VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo,
+	VkPipelineShaderStageCreateInfo shaderStages[2] = {vertShaderStageInfo,
 							  fragShaderStageInfo};
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
