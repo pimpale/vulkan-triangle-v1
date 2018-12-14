@@ -29,13 +29,13 @@ all: Vulkan\ Rotating\ Cube
 Vulkan\ Rotating\ Cube: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	gcc  -o "Vulkan Rotating Cube" $(OBJS) $(USER_OBJS) $(LIBS)
+	gcc  -o "vulkan-triangle" $(OBJS) $(USER_OBJS) $(LIBS)
 	@echo 'Finished building target: $@'
 	@echo ' '
 
 # Other Targets
 clean:
-	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) "Vulkan Rotating Cube"
+	-$(RM) $(EXECUTABLES)$(OBJS)$(C_DEPS) "vulkan-triangle"
 	-@echo ' '
 
 .PHONY: all clean dependents

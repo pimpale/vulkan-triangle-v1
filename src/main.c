@@ -154,8 +154,6 @@ int main(void) {
 				new_GraphicsPipeline(&graphicsPipeline, device, vertShaderModule,
 												fragShaderModule, swapChainExtent, renderPass,
 												graphicsPipelineLayout);
-				delete_ShaderModule(&fragShaderModule, device);
-				delete_ShaderModule(&vertShaderModule, device);
 
 				VkFramebuffer* pSwapChainFramebuffers;
 				new_SwapChainFramebuffers(&pSwapChainFramebuffers, device, renderPass,
@@ -206,6 +204,7 @@ int main(void) {
 												delete_SwapChain(&swapChain, device);
 
 
+												/* Set swapchain to new window size */
 												getWindowExtent(&swapChainExtent, pWindow);
 
 												/*Create swap chain */
@@ -214,57 +213,24 @@ int main(void) {
 																				device, surface,
 																				swapChainExtent, graphicsIndex,
 																				presentIndex);
-
 												new_SwapChainImages(&pSwapChainImages, &swapChainImageCount, device,
 																				swapChain);
 												new_SwapChainImageViews(&pSwapChainImageViews, device, surfaceFormat.format,
 																				swapChainImageCount,
 																				pSwapChainImages);
 
-
-												VkShaderModule fragShaderModule;
-												{
-																uint32_t* fragShaderFileContents;
-																uint32_t fragShaderFileLength;
-																readShaderFile("assets/shaders/shader.frag.spv", &fragShaderFileLength,
-																								&fragShaderFileContents);
-																new_ShaderModule(&fragShaderModule, device, fragShaderFileLength,
-																								fragShaderFileContents);
-																free(fragShaderFileContents);
-												}
-
-												VkShaderModule vertShaderModule;
-												{
-																uint32_t* vertShaderFileContents;
-																uint32_t vertShaderFileLength;
-																readShaderFile("assets/shaders/shader.vert.spv", &vertShaderFileLength,
-																								&vertShaderFileContents);
-																new_ShaderModule(&vertShaderModule, device, vertShaderFileLength,
-																								vertShaderFileContents);
-																free(vertShaderFileContents);
-												}
-
 												/* Create graphics pipeline */
 												new_RenderPass(&renderPass, device, surfaceFormat.format);
-
-												VkPipelineLayout graphicsPipelineLayout;
 												new_PipelineLayout(&graphicsPipelineLayout, device);
-
 												new_GraphicsPipeline(&graphicsPipeline, device, vertShaderModule,
 																				fragShaderModule, swapChainExtent, renderPass,
 																				graphicsPipelineLayout);
-												delete_ShaderModule(&fragShaderModule, device);
-												delete_ShaderModule(&vertShaderModule, device);
-
 												new_SwapChainFramebuffers(&pSwapChainFramebuffers, device, renderPass,
 																				swapChainExtent, swapChainImageCount, pSwapChainImageViews);
-
 												new_CommandPool(&commandPool, device, graphicsIndex);
-
 												new_GraphicsCommandBuffers(&pGraphicsCommandBuffers, device, renderPass,
 																				graphicsPipeline, commandPool, swapChainExtent, swapChainImageCount,
 																				pSwapChainFramebuffers);
-
 												new_Semaphores(&pImageAvailableSemaphores, swapChainImageCount, device);
 												new_Semaphores(&pRenderFinishedSemaphores, swapChainImageCount, device);
 												new_Fences(&pInFlightFences, swapChainImageCount, device);
@@ -274,6 +240,8 @@ int main(void) {
 
 				/*cleanup*/
 				vkDeviceWaitIdle(device);
+				delete_ShaderModule(&fragShaderModule, device);
+				delete_ShaderModule(&vertShaderModule, device);
 				delete_Fences(&pInFlightFences, swapChainImageCount, device);
 				delete_Semaphores(&pRenderFinishedSemaphores, swapChainImageCount, device);
 				delete_Semaphores(&pImageAvailableSemaphores, swapChainImageCount, device);
