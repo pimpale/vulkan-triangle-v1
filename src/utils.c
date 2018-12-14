@@ -11,9 +11,9 @@
 #include <string.h>
 #include <errno.h>
 
-#include <vulkan.h>
+#include <vulkan/vulkan.h>
 #define GLFW_DEFINE_VULKAN
-#include <glfw3.h>
+#include <GLFW/glfw3.h>
 
 #include "constants.h"
 #include "errors.h"

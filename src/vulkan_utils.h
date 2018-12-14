@@ -10,9 +10,9 @@
 #define VULKAN_UTILS_H_
 
 #include <stdint.h>
-#include <vulkan.h>
+#include <vulkan/vulkan.h>
 #define GLFW_INCLUDE_VULKAN
-#include <glfw3.h>
+#include <GLFW/glfw3.h>
 
 struct VulkanWindow {
 	VkInstance instance;
@@ -47,9 +47,4 @@ struct VulkanWindow {
 	VkFence* pInFlightFences;
 };
 
-uint32_t new_GLFWwindow(const GLFWwindow** ppGLFWwindow);
-
-uint32_t new_Surface(VkSurfaceKHR *pSurface, const GLFWwindow *pWindow,
-		const VkInstance instance);
-
-#endif VULKAN_UTILS_H_
+#endif /* VULKAN_UTILS_H_ */

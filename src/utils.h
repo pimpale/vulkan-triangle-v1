@@ -9,9 +9,9 @@
 #define UTILS_H_
 
 #include <stdint.h>
-#include <vulkan.h>
+#include <vulkan/vulkan.h>
 #define GLFW_INCLUDE_VULKAN
-#include <glfw3.h>
+#include <GLFW/glfw3.h>
 
 void findMatchingStrings(const char *const *ppData, uint32_t dataLen,
                          const char *const *ppQuery, uint32_t queryLen,

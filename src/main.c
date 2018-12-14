@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <vulkan.h>
+#include <vulkan/vulkan.h>
 #define GLFW_INCLUDE_VULKAN
-#include <glfw3.h>
+#include <GLFW/glfw3.h>
 
 #include "constants.h"
 #include "errors.h"
@@ -13,207 +13,286 @@
 #include "vulkan_helper.h"
 
 int main(void) {
-	glfwInit();
+				glfwInit();
 
-	/* Extensions, Layers, and Device Extensions declared (some initialized) */
-	uint32_t extensionCount;
-	const char **ppExtensionNames;
-	uint32_t layerCount = 1;
-	const char *ppLayerNames[] = { "VK_LAYER_LUNARG_standard_validation" };
-	uint32_t deviceExtensionCount = 1;
-	const char *ppDeviceExtensionNames[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+				/* Extensions, Layers, and Device Extensions declared (some initialized) */
+				uint32_t extensionCount;
+				const char **ppExtensionNames;
+				const uint32_t layerCount = 1;
+				const char *ppLayerNames[] = { "VK_LAYER_LUNARG_standard_validation" };
+				uint32_t deviceExtensionCount = 1;
+				const char *ppDeviceExtensionNames[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-	/* set other uninitialized stuff */
-	{
-		/* define our own extensions */
-		/* get glfw extensions to use */
-		uint32_t glfwExtensionCount = 0;
-		const char **ppGlfwExtensionNames = glfwGetRequiredInstanceExtensions(
-				&glfwExtensionCount);
-		extensionCount = 1 + glfwExtensionCount;
+				/* set other uninitialized stuff */
+				{
+								/* define our own extensions */
+								/* get GLFW extensions to use */
+								uint32_t glfwExtensionCount = 0;
+								const char **ppGlfwExtensionNames = glfwGetRequiredInstanceExtensions(
+																&glfwExtensionCount);
+								extensionCount = 1 + glfwExtensionCount;
 
-		ppExtensionNames = malloc(sizeof(char *) * extensionCount);
+								ppExtensionNames = malloc(sizeof(char *) * extensionCount);
 
-		if (!ppExtensionNames) {
-			errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
-			panic();
-		}
+								if (!ppExtensionNames) {
+												errLog(FATAL, "failed to allocate memory: %s", strerror(errno));
+												panic();
+								}
 
-		ppExtensionNames[0] = "VK_EXT_debug_utils";
-		for (uint32_t i = 0; i < glfwExtensionCount; i++) {
-			ppExtensionNames[i + 1] = ppGlfwExtensionNames[i];
-		}
-	}
+								ppExtensionNames[0] = "VK_EXT_debug_utils";
+								for (uint32_t i = 0; i < glfwExtensionCount; i++) {
+												ppExtensionNames[i + 1] = ppGlfwExtensionNames[i];
+								}
+				}
 
-	/* Create instance */
-	VkInstance instance;
-	new_Instance(&instance, extensionCount, ppExtensionNames, layerCount,
-			ppLayerNames);
-	VkDebugUtilsMessengerEXT callback;
-	new_DebugCallback(&callback, instance);
+				/* Create instance */
+				VkInstance instance;
+				new_Instance(&instance, extensionCount, ppExtensionNames, layerCount,
+												ppLayerNames);
+				VkDebugUtilsMessengerEXT callback;
+				new_DebugCallback(&callback, instance);
 
-	/* get physical device */
-	VkPhysicalDevice physicalDevice;
-	getPhysicalDevice(&physicalDevice, instance);
+				/* get physical device */
+				VkPhysicalDevice physicalDevice;
+				getPhysicalDevice(&physicalDevice, instance);
 
-	/* Create window and surface */
-	GLFWwindow *pWindow;
-	new_GLFWwindow(&pWindow);
-	VkSurfaceKHR surface;
-	new_Surface(&surface, pWindow, instance);
+				/* Create window and surface */
+				GLFWwindow *pWindow;
+				new_GLFWwindow(&pWindow);
+				VkSurfaceKHR surface;
+				new_Surface(&surface, pWindow, instance);
 
-	/* find queues on graphics device */
-	uint32_t graphicsIndex;
-	uint32_t computeIndex;
-	uint32_t presentIndex;
-	{
-		uint32_t ret1 = getDeviceQueueIndex(&graphicsIndex, physicalDevice,
-				VK_QUEUE_GRAPHICS_BIT);
-		uint32_t ret2 = getDeviceQueueIndex(&computeIndex, physicalDevice,
-				VK_QUEUE_COMPUTE_BIT);
-		uint32_t ret3 = getPresentQueueIndex(&presentIndex, physicalDevice,
-				surface);
-		/* Panic if indices are unavailable */
-		if (ret1 != VK_SUCCESS || ret2 != VK_SUCCESS || ret3 != VK_SUCCESS) {
-			errLog(FATAL, "unable to acquire indices\n");
-			panic();
-		}
-	}
-
-
-	/* Set extent (for now just window width and height) */
-	VkExtent2D swapChainExtent = { WINDOW_WIDTH, WINDOW_HEIGHT };
-
-	/*create device */
-	VkDevice device;
-	new_Device(&device, physicalDevice, graphicsIndex,
-			deviceExtensionCount,
-			ppDeviceExtensionNames, layerCount, ppLayerNames);
-
-	VkQueue graphicsQueue;
-	getQueue(&graphicsQueue, device, graphicsIndex);
-	VkQueue computeQueue;
-	getQueue(&computeQueue, device, computeIndex);
-	VkQueue presentQueue;
-	getQueue(&presentQueue, device, presentIndex);
-
-	/* get preferred format of screen*/
-	VkSurfaceFormatKHR surfaceFormat;
-	getPreferredSurfaceFormat(&surfaceFormat, physicalDevice, surface);
-
-	/*Create swap chain */
-	VkSwapchainKHR swapChain;
-	uint32_t swapChainImageCount = 0;
-	new_SwapChain(&swapChain, &swapChainImageCount, VK_NULL_HANDLE,
-			surfaceFormat, physicalDevice,
-			device, surface,
-			swapChainExtent, graphicsIndex,
-			presentIndex);
-
-	VkImage* pSwapChainImages = NULL;
-	VkImageView* pSwapChainImageViews = NULL;
-
-	new_SwapChainImages(&pSwapChainImages, &swapChainImageCount, device,
-			swapChain);
-	new_SwapChainImageViews(&pSwapChainImageViews, device, surfaceFormat.format,
-			swapChainImageCount,
-			pSwapChainImages);
+				/* find queues on graphics device */
+				uint32_t graphicsIndex;
+				uint32_t computeIndex;
+				uint32_t presentIndex;
+				{
+								uint32_t ret1 = getDeviceQueueIndex(&graphicsIndex, physicalDevice,
+																VK_QUEUE_GRAPHICS_BIT);
+								uint32_t ret2 = getDeviceQueueIndex(&computeIndex, physicalDevice,
+																VK_QUEUE_COMPUTE_BIT);
+								uint32_t ret3 = getPresentQueueIndex(&presentIndex, physicalDevice,
+																surface);
+								/* Panic if indices are unavailable */
+								if (ret1 != VK_SUCCESS || ret2 != VK_SUCCESS || ret3 != VK_SUCCESS) {
+												errLog(FATAL, "unable to acquire indices\n");
+												panic();
+								}
+				}
 
 
-	VkShaderModule fragShaderModule;
-	{
-		uint32_t* fragShaderFileContents;
-		uint32_t fragShaderFileLength;
-		readShaderFile("assets/shaders/shader.frag.spv", &fragShaderFileLength,
-				&fragShaderFileContents);
-		new_ShaderModule(&fragShaderModule, device, fragShaderFileLength,
-				fragShaderFileContents);
-		free(fragShaderFileContents);
-	}
+				/* Set extent (for now just window width and height) */
+				VkExtent2D swapChainExtent;
+				getWindowExtent(&swapChainExtent, pWindow);
 
-	VkShaderModule vertShaderModule;
-	{
-		uint32_t* vertShaderFileContents;
-		uint32_t vertShaderFileLength;
-		readShaderFile("assets/shaders/shader.vert.spv", &vertShaderFileLength,
-				&vertShaderFileContents);
-		new_ShaderModule(&vertShaderModule, device, vertShaderFileLength,
-				vertShaderFileContents);
-		free(vertShaderFileContents);
-	}
+				/*create device */
+				VkDevice device;
+				new_Device(&device, physicalDevice, graphicsIndex,
+												deviceExtensionCount,
+												ppDeviceExtensionNames, layerCount, ppLayerNames);
 
-	/* Create graphics pipeline */
-	VkRenderPass renderPass;
-	new_RenderPass(&renderPass, device, surfaceFormat.format);
+				VkQueue graphicsQueue;
+				getQueue(&graphicsQueue, device, graphicsIndex);
+				VkQueue computeQueue;
+				getQueue(&computeQueue, device, computeIndex);
+				VkQueue presentQueue;
+				getQueue(&presentQueue, device, presentIndex);
 
-	VkPipelineLayout graphicsPipelineLayout;
-	new_PipelineLayout(&graphicsPipelineLayout, device);
+				/* get preferred format of screen*/
+				VkSurfaceFormatKHR surfaceFormat;
+				getPreferredSurfaceFormat(&surfaceFormat, physicalDevice, surface);
 
-	VkPipeline graphicsPipeline;
-	new_GraphicsPipeline(&graphicsPipeline, device, vertShaderModule,
-			fragShaderModule, swapChainExtent, renderPass,
-			graphicsPipelineLayout);
-	delete_ShaderModule(&fragShaderModule, device);
-	delete_ShaderModule(&vertShaderModule, device);
+				/*Create swap chain */
+				VkSwapchainKHR swapChain;
+				uint32_t swapChainImageCount = 0;
+				new_SwapChain(&swapChain, &swapChainImageCount, VK_NULL_HANDLE,
+												surfaceFormat, physicalDevice,
+												device, surface,
+												swapChainExtent, graphicsIndex,
+												presentIndex);
 
-	VkFramebuffer* pSwapChainFramebuffers;
-	new_SwapChainFramebuffers(&pSwapChainFramebuffers, device, renderPass,
-			swapChainExtent, swapChainImageCount, pSwapChainImageViews);
+				VkImage* pSwapChainImages = NULL;
+				VkImageView* pSwapChainImageViews = NULL;
 
-	VkCommandPool commandPool;
-	new_CommandPool(&commandPool, device, graphicsIndex);
+				new_SwapChainImages(&pSwapChainImages, &swapChainImageCount, device,
+												swapChain);
+				new_SwapChainImageViews(&pSwapChainImageViews, device, surfaceFormat.format,
+												swapChainImageCount,
+												pSwapChainImages);
 
-	VkCommandBuffer *pGraphicsCommandBuffers;
-	new_GraphicsCommandBuffers(&pGraphicsCommandBuffers, device, renderPass,
-			graphicsPipeline, commandPool, swapChainExtent, swapChainImageCount,
-			pSwapChainFramebuffers);
 
-	VkSemaphore* pImageAvailableSemaphores;
-	VkSemaphore* pRenderFinishedSemaphores;
-	VkFence *pInFlightFences;
-	new_Semaphores(&pImageAvailableSemaphores, swapChainImageCount, device);
-	new_Semaphores(&pRenderFinishedSemaphores, swapChainImageCount, device);
-	new_Fences(&pInFlightFences, swapChainImageCount, device);
+				VkShaderModule fragShaderModule;
+				{
+								uint32_t* fragShaderFileContents;
+								uint32_t fragShaderFileLength;
+								readShaderFile("assets/shaders/shader.frag.spv", &fragShaderFileLength,
+																&fragShaderFileContents);
+								new_ShaderModule(&fragShaderModule, device, fragShaderFileLength,
+																fragShaderFileContents);
+								free(fragShaderFileContents);
+				}
 
-	uint32_t currentFrame = 0;
-	/*wait till close*/
-	while (!glfwWindowShouldClose(pWindow)) {
-		glfwPollEvents();
-		uint32_t result = drawFrame(&currentFrame, 2, device, swapChain,
-				pGraphicsCommandBuffers,
-				pInFlightFences,
-				pImageAvailableSemaphores,
-				pRenderFinishedSemaphores,
-				graphicsQueue,
-				presentQueue);
+				VkShaderModule vertShaderModule;
+				{
+								uint32_t* vertShaderFileContents;
+								uint32_t vertShaderFileLength;
+								readShaderFile("assets/shaders/shader.vert.spv", &vertShaderFileLength,
+																&vertShaderFileContents);
+								new_ShaderModule(&vertShaderModule, device, vertShaderFileLength,
+																vertShaderFileContents);
+								free(vertShaderFileContents);
+				}
 
-		if (result == EOUTOFDATE) {
-			/* Delete swapchain, recreate */
-		}
+				/* Create graphics pipeline */
+				VkRenderPass renderPass;
+				new_RenderPass(&renderPass, device, surfaceFormat.format);
 
-	}
+				VkPipelineLayout graphicsPipelineLayout;
+				new_PipelineLayout(&graphicsPipelineLayout, device);
 
-	/*cleanup*/
-	vkDeviceWaitIdle(device);
-	delete_Fences(&pInFlightFences, swapChainImageCount, device);
-	delete_Semaphores(&pRenderFinishedSemaphores, swapChainImageCount, device);
-	delete_Semaphores(&pImageAvailableSemaphores, swapChainImageCount, device);
-	delete_GraphicsCommandBuffers(&pGraphicsCommandBuffers);
-	delete_CommandPool(&commandPool, device);
-	delete_SwapChainFramebuffers(&pSwapChainFramebuffers, swapChainImageCount,
-			device);
-	delete_Pipeline(&graphicsPipeline, device);
-	delete_PipelineLayout(&graphicsPipelineLayout, device);
-	delete_RenderPass(&renderPass, device);
-	delete_SwapChainImageViews(&pSwapChainImageViews, swapChainImageCount,
-			device);
-	delete_SwapChainImages(&pSwapChainImages);
-	delete_SwapChain(&swapChain, device);
-	delete_Device(&device);
-	delete_Surface(&surface, instance);
-	delete_DebugCallback(&callback, instance);
-	delete_Instance(&instance);
-	free(ppExtensionNames);
-	glfwTerminate();
-	return (EXIT_SUCCESS);
+				VkPipeline graphicsPipeline;
+				new_GraphicsPipeline(&graphicsPipeline, device, vertShaderModule,
+												fragShaderModule, swapChainExtent, renderPass,
+												graphicsPipelineLayout);
+				delete_ShaderModule(&fragShaderModule, device);
+				delete_ShaderModule(&vertShaderModule, device);
+
+				VkFramebuffer* pSwapChainFramebuffers;
+				new_SwapChainFramebuffers(&pSwapChainFramebuffers, device, renderPass,
+												swapChainExtent, swapChainImageCount, pSwapChainImageViews);
+
+				VkCommandPool commandPool;
+				new_CommandPool(&commandPool, device, graphicsIndex);
+
+				VkCommandBuffer *pGraphicsCommandBuffers;
+				new_GraphicsCommandBuffers(&pGraphicsCommandBuffers, device, renderPass,
+												graphicsPipeline, commandPool, swapChainExtent, swapChainImageCount,
+												pSwapChainFramebuffers);
+
+				VkSemaphore* pImageAvailableSemaphores;
+				VkSemaphore* pRenderFinishedSemaphores;
+				VkFence *pInFlightFences;
+				new_Semaphores(&pImageAvailableSemaphores, swapChainImageCount, device);
+				new_Semaphores(&pRenderFinishedSemaphores, swapChainImageCount, device);
+				new_Fences(&pInFlightFences, swapChainImageCount, device);
+
+				uint32_t currentFrame = 0;
+				/*wait till close*/
+				while (!glfwWindowShouldClose(pWindow)) {
+								glfwPollEvents();
+								uint32_t result = drawFrame(&currentFrame, 2, device, swapChain,
+																pGraphicsCommandBuffers,
+																pInFlightFences,
+																pImageAvailableSemaphores,
+																pRenderFinishedSemaphores,
+																graphicsQueue,
+																presentQueue);
+
+								if (result == EOUTOFDATE) {
+												vkDeviceWaitIdle(device);
+												delete_Fences(&pInFlightFences, swapChainImageCount, device);
+												delete_Semaphores(&pRenderFinishedSemaphores, swapChainImageCount, device);
+												delete_Semaphores(&pImageAvailableSemaphores, swapChainImageCount, device);
+												delete_GraphicsCommandBuffers(&pGraphicsCommandBuffers);
+												delete_CommandPool(&commandPool, device);
+												delete_SwapChainFramebuffers(&pSwapChainFramebuffers, swapChainImageCount,
+																				device);
+												delete_Pipeline(&graphicsPipeline, device);
+												delete_PipelineLayout(&graphicsPipelineLayout, device);
+												delete_RenderPass(&renderPass, device);
+												delete_SwapChainImageViews(&pSwapChainImageViews, swapChainImageCount,
+																				device);
+												delete_SwapChainImages(&pSwapChainImages);
+												delete_SwapChain(&swapChain, device);
+
+
+												getWindowExtent(&swapChainExtent, pWindow);
+
+												/*Create swap chain */
+												new_SwapChain(&swapChain, &swapChainImageCount, VK_NULL_HANDLE,
+																				surfaceFormat, physicalDevice,
+																				device, surface,
+																				swapChainExtent, graphicsIndex,
+																				presentIndex);
+
+												new_SwapChainImages(&pSwapChainImages, &swapChainImageCount, device,
+																				swapChain);
+												new_SwapChainImageViews(&pSwapChainImageViews, device, surfaceFormat.format,
+																				swapChainImageCount,
+																				pSwapChainImages);
+
+
+												VkShaderModule fragShaderModule;
+												{
+																uint32_t* fragShaderFileContents;
+																uint32_t fragShaderFileLength;
+																readShaderFile("assets/shaders/shader.frag.spv", &fragShaderFileLength,
+																								&fragShaderFileContents);
+																new_ShaderModule(&fragShaderModule, device, fragShaderFileLength,
+																								fragShaderFileContents);
+																free(fragShaderFileContents);
+												}
+
+												VkShaderModule vertShaderModule;
+												{
+																uint32_t* vertShaderFileContents;
+																uint32_t vertShaderFileLength;
+																readShaderFile("assets/shaders/shader.vert.spv", &vertShaderFileLength,
+																								&vertShaderFileContents);
+																new_ShaderModule(&vertShaderModule, device, vertShaderFileLength,
+																								vertShaderFileContents);
+																free(vertShaderFileContents);
+												}
+
+												/* Create graphics pipeline */
+												new_RenderPass(&renderPass, device, surfaceFormat.format);
+
+												VkPipelineLayout graphicsPipelineLayout;
+												new_PipelineLayout(&graphicsPipelineLayout, device);
+
+												new_GraphicsPipeline(&graphicsPipeline, device, vertShaderModule,
+																				fragShaderModule, swapChainExtent, renderPass,
+																				graphicsPipelineLayout);
+												delete_ShaderModule(&fragShaderModule, device);
+												delete_ShaderModule(&vertShaderModule, device);
+
+												new_SwapChainFramebuffers(&pSwapChainFramebuffers, device, renderPass,
+																				swapChainExtent, swapChainImageCount, pSwapChainImageViews);
+
+												new_CommandPool(&commandPool, device, graphicsIndex);
+
+												new_GraphicsCommandBuffers(&pGraphicsCommandBuffers, device, renderPass,
+																				graphicsPipeline, commandPool, swapChainExtent, swapChainImageCount,
+																				pSwapChainFramebuffers);
+
+												new_Semaphores(&pImageAvailableSemaphores, swapChainImageCount, device);
+												new_Semaphores(&pRenderFinishedSemaphores, swapChainImageCount, device);
+												new_Fences(&pInFlightFences, swapChainImageCount, device);
+								}
+
+				}
+
+				/*cleanup*/
+				vkDeviceWaitIdle(device);
+				delete_Fences(&pInFlightFences, swapChainImageCount, device);
+				delete_Semaphores(&pRenderFinishedSemaphores, swapChainImageCount, device);
+				delete_Semaphores(&pImageAvailableSemaphores, swapChainImageCount, device);
+				delete_GraphicsCommandBuffers(&pGraphicsCommandBuffers);
+				delete_CommandPool(&commandPool, device);
+				delete_SwapChainFramebuffers(&pSwapChainFramebuffers, swapChainImageCount,
+												device);
+				delete_Pipeline(&graphicsPipeline, device);
+				delete_PipelineLayout(&graphicsPipelineLayout, device);
+				delete_RenderPass(&renderPass, device);
+				delete_SwapChainImageViews(&pSwapChainImageViews, swapChainImageCount,
+												device);
+				delete_SwapChainImages(&pSwapChainImages);
+				delete_SwapChain(&swapChain, device);
+				delete_Device(&device);
+				delete_Surface(&surface, instance);
+				delete_DebugCallback(&callback, instance);
+				delete_Instance(&instance);
+				free(ppExtensionNames);
+				glfwTerminate();
+				return (EXIT_SUCCESS);
 }

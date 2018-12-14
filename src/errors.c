@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include <vulkan.h>
+#include <vulkan/vulkan.h>
 
 #include "constants.h"
 

@@ -7,9 +7,9 @@
 
 #include <stdint.h>
 
-#include <vulkan.h>
+#include <vulkan/vulkan.h>
 #define GLFW_INCLUDE_VULKAN
-#include <glfw3.h>
+#include <GLFW/glfw3.h>
 
 #include "constants.h"
 #include "errors.h"
@@ -18,35 +18,6 @@
 #include "vulkan_utils.h"
 
 
-VkExtent2D getWindowExtent(const GLFWwindow* pWindow) {
-	int height;
-	int width;
-	glfwGetWindowSize(pWindow, &width, &height);
-	VkExtent2D extent = {(uint32_t)width, (uint32_t)height};
-	return (extent);
-}
-
-uint32_t new_GLFWwindow(GLFWwindow** ppGLFWwindow) {
-	glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-	glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-	*ppGLFWwindow =
-	    glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, APPNAME, NULL, NULL);
-	if (*ppGLFWwindow == NULL) {
-		return (EOPFAIL);
-	}
-	return (ESUCCESS);
-}
-
-uint32_t new_Surface(VkSurfaceKHR* pSurface, GLFWwindow* pWindow,
-		     const VkInstance instance) {
-	VkResult res =
-	    glfwCreateWindowSurface(instance, pWindow, NULL, pSurface);
-	if (res != VK_SUCCESS) {
-		errLog(FATAL, "failed to create surface, quitting");
-		panic();
-	}
-	return (ESUCCESS);
-}
 
 /* find queues on graphics device */
 void setupVulkanWindow_getQueues(struct VulkanWindow* pVulkanWindow) {
@@ -69,12 +40,11 @@ void setupVulkanWindow_getQueues(struct VulkanWindow* pVulkanWindow) {
 		panic();
 	}
 }
-
+//TODO accept function pointer
 void setupVulkanWindow_createSwapChain(struct VulkanWindow* pVulkanWindow,
 				       VkSwapchainKHR* pOldSwapChain) {
 	/* Set extent (for now just window width and height) */
-	pVulkanWindow->swapChainExtent =
-	    getWindowExtent(pVulkanWindow->pWindow);
+	getWindowExtent(&pVulkanWindow->swapChainExtent, pVulkanWindow->pWindow);
 
 	/* get preferred format of screen*/
 	getPreferredSurfaceFormat(&pVulkanWindow->surfaceFormat,
@@ -99,6 +69,7 @@ void setupVulkanWindow_createSwapChain(struct VulkanWindow* pVulkanWindow,
 				pVulkanWindow->surfaceFormat.format,
 				pVulkanWindow->swapChainImageCount,
 				pVulkanWindow->pSwapChainImages);
+
 }
 
 uint32_t new_VulkanWindow(struct VulkanWindow* pVulkanWindow,

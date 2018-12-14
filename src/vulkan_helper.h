@@ -9,7 +9,9 @@
 #define VULKAN_HELPER_H_
 
 #include <stdint.h>
-#include <vulkan.h>
+#include <vulkan/vulkan.h>
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 char* vkstrerror(VkResult err);
 
@@ -20,6 +22,10 @@ uint32_t new_Instance(VkInstance* pInstance,
 		const char *const *ppEnabledLayerNames);
 
 void delete_Instance(VkInstance *pInstance);
+
+uint32_t new_GLFWwindow(GLFWwindow** ppGLFWwindow);
+
+uint32_t getWindowExtent(VkExtent2D *pExtent, GLFWwindow* pWindow);
 
 uint32_t new_DebugCallback(VkDebugUtilsMessengerEXT* pCallback,
 		const VkInstance instance);
@@ -145,6 +151,9 @@ uint32_t drawFrame(uint32_t* pCurrentFrame, const uint32_t maxFramesInFlight,
 		const VkSemaphore *pRenderFinishedSemaphores,
 		const VkQueue graphicsQueue,
 		const VkQueue presentQueue);
+
+uint32_t new_Surface(VkSurfaceKHR* pSurface, GLFWwindow* pWindow,
+		     const VkInstance instance);
 
 void delete_Surface(VkSurfaceKHR* pSurface, const VkInstance instance);
 
