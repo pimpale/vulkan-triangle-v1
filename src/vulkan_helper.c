@@ -143,8 +143,8 @@ uint32_t new_RequiredInstanceExtensions(uint32_t *pEnabledExtensionCount,
 	 * be freed or not) */
 	strncpy((*pppEnabledExtensionNames)[0],
 		VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_MAX_EXTENSION_NAME_SIZE);
-	for (uint32_t i = 1; i < glfwExtensionCount; i++) {
-		strncpy((*pppEnabledExtensionNames)[i], ppGlfwExtensionNames[i],
+	for (uint32_t i = 0; i < glfwExtensionCount; i++) {
+		strncpy((*pppEnabledExtensionNames)[i+1], ppGlfwExtensionNames[i],
 			VK_MAX_EXTENSION_NAME_SIZE);
 	}
 	return (ESUCCESS);
