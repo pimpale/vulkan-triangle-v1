@@ -15,7 +15,7 @@
 int main(void) {
 	glfwInit();
 
-	/* Extensions, Layers, and Device Extensions declared 
+	/* Extensions, Layers, and Device Extensions declared
 	 */
 	uint32_t extensionCount;
 	char** ppExtensionNames;
@@ -74,7 +74,8 @@ int main(void) {
 	/*create device */
 	VkDevice device;
 	new_Device(&device, physicalDevice, graphicsIndex, deviceExtensionCount,
-		   (const char* const*) ppDeviceExtensionNames, layerCount, (const char* const*)ppLayerNames);
+		   (const char* const*)ppDeviceExtensionNames, layerCount,
+		   (const char* const*)ppLayerNames);
 
 	VkQueue graphicsQueue;
 	getQueue(&graphicsQueue, device, graphicsIndex);
