@@ -15,6 +15,24 @@
 
 char* vkstrerror(VkResult err);
 
+
+uint32_t new_RequiredInstanceExtensions(uint32_t *pEnabledExtensionCount,
+					char ***pppEnabledExtensionNames);
+
+
+void delete_RequiredInstanceExtensions(uint32_t *pEnabledExtensionCount,
+				       char ***pppEnabledExtensionNames);
+
+uint32_t new_ValidationLayers(uint32_t *pLayerCount, char ***pppLayerNames);
+
+void delete_ValidationLayers(uint32_t *pLayerCount, char ***pppLayerNames);
+
+uint32_t new_RequiredDeviceExtensions(uint32_t *pEnabledExtensionCount,
+				      char ***pppEnabledExtensionNames);
+
+void delete_RequiredDeviceExtensions(uint32_t *pEnabledExtensionCount,
+				     char ***pppEnabledExtensionNames);
+
 uint32_t new_Instance(VkInstance* pInstance,
 		const uint32_t enabledExtensionCount,
 		const char *const *ppEnabledExtensionNames,
@@ -22,6 +40,8 @@ uint32_t new_Instance(VkInstance* pInstance,
 		const char *const *ppEnabledLayerNames);
 
 void delete_Instance(VkInstance *pInstance);
+
+
 
 uint32_t new_GLFWwindow(GLFWwindow** ppGLFWwindow);
 

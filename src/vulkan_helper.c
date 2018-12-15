@@ -114,6 +114,77 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	errLog(errcode, "Vulkan validation layer: %s", pCallbackData->pMessage);
 	return (VK_FALSE);
 }
+
+/* Get required extensions */
+uint32_t new_RequiredInstanceExtensions(uint32_t *pEnabledExtensionCount,
+					char ***pppEnabledExtensionNames) {
+	/* define our own extensions */
+	/* get GLFW extensions to use */
+	uint32_t glfwExtensionCount = 0;
+	const char **ppGlfwExtensionNames =
+	    glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+	*pEnabledExtensionCount = 1 + glfwExtensionCount;
+	*pppEnabledExtensionNames =
+	    malloc(sizeof(char *) * (*pEnabledExtensionCount));
+
+	if (!(*pppEnabledExtensionNames)) {
+		errLog(FATAL, "failed to get required extensions: %s",
+		       strerror(errno));
+		panic();
+	}
+
+	/* Allocate buffers for extensions */
+	for (uint32_t i = 0; i < *pEnabledExtensionCount; i++) {
+		(*pppEnabledExtensionNames)[i] =
+		    malloc(VK_MAX_EXTENSION_NAME_SIZE);
+	}
+	/* Copy our extensions in  (we're malloccing everything to make it
+	 * simple to deallocate at the end without worrying about what needs to
+	 * be freed or not) */
+	strncpy((*pppEnabledExtensionNames)[0],
+		VK_EXT_DEBUG_UTILS_EXTENSION_NAME, VK_MAX_EXTENSION_NAME_SIZE);
+	for (uint32_t i = 1; i < glfwExtensionCount; i++) {
+		strncpy((*pppEnabledExtensionNames)[i], ppGlfwExtensionNames[i],
+			VK_MAX_EXTENSION_NAME_SIZE);
+	}
+	return (ESUCCESS);
+}
+
+void delete_RequiredInstanceExtensions(uint32_t *pEnabledExtensionCount,
+				       char ***pppEnabledExtensionNames) {
+	for (uint32_t i = 0; i < *pEnabledExtensionCount; i++) {
+		free((*pppEnabledExtensionNames)[i]);
+	}
+	free(*pppEnabledExtensionNames);
+}
+
+uint32_t new_ValidationLayers(uint32_t *pLayerCount, char ***pppLayerNames) {
+	*pLayerCount = 1;
+	*pppLayerNames = malloc(sizeof(char *) * sizeof(*pLayerCount));
+	**pppLayerNames = "VK_LAYER_LUNARG_standard_validation";
+	return (ESUCCESS);
+}
+
+void delete_ValidationLayers(uint32_t *pLayerCount, char ***pppLayerNames) {
+	UNUSED(pLayerCount);
+	free(*pppLayerNames);
+}
+
+uint32_t new_RequiredDeviceExtensions(uint32_t *pEnabledExtensionCount,
+				      char ***pppEnabledExtensionNames) {
+	*pEnabledExtensionCount = 1;
+	*pppEnabledExtensionNames =
+	    malloc(sizeof(char *) * sizeof(*pEnabledExtensionCount));
+	**pppEnabledExtensionNames = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+	return (ESUCCESS);
+}
+
+void delete_RequiredDeviceExtensions(uint32_t *pEnabledExtensionCount,
+				     char ***pppEnabledExtensionNames) {
+	UNUSED(pEnabledExtensionCount);
+	free(*pppEnabledExtensionNames);
+}
+
 uint32_t new_Instance(VkInstance *pInstance,
 		      const uint32_t enabledExtensionCount,
 		      const char *const *ppEnabledExtensionNames,
@@ -217,7 +288,7 @@ uint32_t getPhysicalDevice(VkPhysicalDevice *pDevice,
 	VkPhysicalDeviceProperties deviceProperties;
 	VkPhysicalDevice selectedDevice = VK_NULL_HANDLE;
 	for (uint32_t i = 0; i < deviceCount; i++) {
-					//TODO confirm it has required properties
+		// TODO confirm it has required properties
 		vkGetPhysicalDeviceProperties(arr[i], &deviceProperties);
 		uint32_t deviceQueueIndex;
 		uint32_t ret = getDeviceQueueIndex(
@@ -568,6 +639,17 @@ uint32_t new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
 	return (ESUCCESS);
 }
 
+uint32_t new_ShaderModuleFromFile(VkShaderModule *pShaderModule,
+				  const VkDevice device, char *filename) {
+	uint32_t *shaderFileContents;
+	uint32_t shaderFileLength;
+	readShaderFile(filename, &shaderFileLength, &shaderFileContents);
+	uint32_t retval = new_ShaderModule(pShaderModule, device, shaderFileLength,
+			 shaderFileContents);
+	free(shaderFileContents);
+	return (retval);
+}
+
 void delete_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device) {
 	vkDestroyShaderModule(device, *pShaderModule, NULL);
 }
@@ -670,7 +752,7 @@ uint32_t new_GraphicsPipeline(VkPipeline *pGraphicsPipeline,
 	fragShaderStageInfo.pName = "main";
 
 	VkPipelineShaderStageCreateInfo shaderStages[2] = {vertShaderStageInfo,
-							  fragShaderStageInfo};
+							   fragShaderStageInfo};
 
 	VkPipelineVertexInputStateCreateInfo vertexInputInfo = {0};
 	vertexInputInfo.sType =
