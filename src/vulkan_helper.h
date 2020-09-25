@@ -104,18 +104,18 @@ uint32_t new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
 
 void delete_ShaderModule(VkShaderModule* pShaderModule, const VkDevice device);
 
-uint32_t new_RenderPass(VkRenderPass* pRenderPass, const VkDevice device,
+uint32_t new_VertexDisplayRenderPass(VkRenderPass* pRenderPass, const VkDevice device,
 		const VkFormat swapChainImageFormat);
 
 void delete_RenderPass(VkRenderPass *pRenderPass, const VkDevice device);
 
-uint32_t new_PipelineLayout(VkPipelineLayout *pPipelineLayout,
+uint32_t new_VertexDisplayPipelineLayout(VkPipelineLayout *pPipelineLayout,
 		const VkDevice device);
 
 void delete_PipelineLayout(VkPipelineLayout *pPipelineLayout,
 		const VkDevice device);
 
-uint32_t new_GraphicsPipeline(VkPipeline* pGraphicsPipeline,
+uint32_t new_VertexDisplayPipeline(VkPipeline* pGraphicsPipeline,
 		const VkDevice device, const VkShaderModule vertShaderModule,
 		const VkShaderModule fragShaderModule, const VkExtent2D extent,
 		const VkRenderPass renderPass, const VkPipelineLayout pipelineLayout);
@@ -172,7 +172,7 @@ uint32_t drawFrame(uint32_t* pCurrentFrame, const uint32_t maxFramesInFlight,
 		const VkQueue graphicsQueue,
 		const VkQueue presentQueue);
 
-uint32_t new_Surface(VkSurfaceKHR* pSurface, GLFWwindow* pWindow,
+uint32_t new_SurfaceFromGLFW(VkSurfaceKHR* pSurface, GLFWwindow* pWindow,
 		     const VkInstance instance);
 
 void delete_Surface(VkSurfaceKHR* pSurface, const VkInstance instance);

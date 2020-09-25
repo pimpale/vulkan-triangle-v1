@@ -147,7 +147,7 @@ uint32_t new_RequiredInstanceExtensions(uint32_t *pEnabledExtensionCount,
 		strncpy((*pppEnabledExtensionNames)[i+1], ppGlfwExtensionNames[i],
 			VK_MAX_EXTENSION_NAME_SIZE);
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_RequiredInstanceExtensions(uint32_t *pEnabledExtensionCount,
@@ -161,8 +161,8 @@ void delete_RequiredInstanceExtensions(uint32_t *pEnabledExtensionCount,
 uint32_t new_ValidationLayers(uint32_t *pLayerCount, char ***pppLayerNames) {
 	*pLayerCount = 1;
 	*pppLayerNames = malloc(sizeof(char *) * sizeof(*pLayerCount));
-	**pppLayerNames = "VK_LAYER_LUNARG_standard_validation";
-	return (ESUCCESS);
+	**pppLayerNames = "VK_LAYER_KHRONOS_validation";
+	return (ERR_NONE);
 }
 
 void delete_ValidationLayers(uint32_t *pLayerCount, char ***pppLayerNames) {
@@ -176,7 +176,7 @@ uint32_t new_RequiredDeviceExtensions(uint32_t *pEnabledExtensionCount,
 	*pppEnabledExtensionNames =
 	    malloc(sizeof(char *) * sizeof(*pEnabledExtensionCount));
 	**pppEnabledExtensionNames = VK_KHR_SWAPCHAIN_EXTENSION_NAME;
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_RequiredDeviceExtensions(uint32_t *pEnabledExtensionCount,
@@ -210,11 +210,12 @@ uint32_t new_Instance(VkInstance *pInstance,
 
 	VkResult result = vkCreateInstance(&createInfo, NULL, pInstance);
 	if (result != VK_SUCCESS) {
-		errLog(FATAL, "Failed to create instance, error code: %d",
-		       (uint32_t)result);
+
+		errLog(FATAL, "failed to create instance, error code: %s",
+		       vkstrerror(result));
 		panic();
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_Instance(VkInstance *pInstance) {
@@ -250,11 +251,11 @@ uint32_t new_DebugCallback(VkDebugUtilsMessengerEXT *pCallback,
 	}
 	VkResult result = func(instance, &createInfo, NULL, pCallback);
 	if (result != VK_SUCCESS) {
-		errLog(FATAL, "Failed to create debug callback, error code: %d",
-		       (uint32_t)result);
+		errLog(FATAL, "Failed to create debug callback, error: %s",
+		       vkstrerror(result));
 		panic();
 	}
-	return (ENOTSUPPORTED);
+	return (ERR_NOTSUPPORTED);
 }
 
 /**
@@ -276,7 +277,7 @@ uint32_t getPhysicalDevice(VkPhysicalDevice *pDevice,
 	VkResult res = vkEnumeratePhysicalDevices(instance, &deviceCount, NULL);
 	if (res != VK_SUCCESS || deviceCount == 0) {
 		errLog(WARN, "no Vulkan capable device found");
-		return (ENOTSUPPORTED);
+		return (ERR_NOTSUPPORTED);
 	}
 	VkPhysicalDevice *arr = malloc(deviceCount * sizeof(VkPhysicalDevice));
 	if (!arr) {
@@ -302,11 +303,11 @@ uint32_t getPhysicalDevice(VkPhysicalDevice *pDevice,
 
 	if (selectedDevice == VK_NULL_HANDLE) {
 		errLog(WARN, "no suitable Vulkan device found");
-		return (ENOTSUPPORTED);
+		return (ERR_NOTSUPPORTED);
 	}
 	free(arr);
 	*pDevice = selectedDevice;
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_Device(VkDevice *pDevice) { vkDestroyDevice(*pDevice, NULL); }
@@ -318,13 +319,13 @@ uint32_t getDeviceQueueIndex(uint32_t *deviceQueueIndex,
 						 NULL);
 	if (queueFamilyCount == 0) {
 		errLog(WARN, "no device queues found");
-		return (ENOTSUPPORTED);
+		return (ERR_NOTSUPPORTED);
 	}
 	VkQueueFamilyProperties *arr =
 	    malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	if (!arr) {
 		errLog(FATAL, "Failed to get device queue index: %s",
-		       strerror(errno));
+		      strerror(errno));
 		panic();
 	}
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
@@ -333,12 +334,12 @@ uint32_t getDeviceQueueIndex(uint32_t *deviceQueueIndex,
 		if (arr[i].queueCount > 0 && (arr[0].queueFlags & bit)) {
 			free(arr);
 			*deviceQueueIndex = i;
-			return (ESUCCESS);
+			return (ERR_NONE);
 		}
 	}
 	free(arr);
 	errLog(WARN, "no suitable device queue found");
-	return (ENOTSUPPORTED);
+	return (ERR_NOTSUPPORTED);
 }
 
 uint32_t getPresentQueueIndex(uint32_t *pPresentQueueIndex,
@@ -349,12 +350,12 @@ uint32_t getPresentQueueIndex(uint32_t *pPresentQueueIndex,
 						 &queueFamilyCount, NULL);
 	if (queueFamilyCount == 0) {
 		errLog(WARN, "no queues found");
-		return (ENOTSUPPORTED);
+		return (ERR_NOTSUPPORTED);
 	}
 	VkQueueFamilyProperties *arr =
 	    malloc(queueFamilyCount * sizeof(VkQueueFamilyProperties));
 	if (!arr) {
-		errLog(FATAL, "Failed to get present queue index: %s",
+		errLog(FATAL, "Failed to allocate memory for present queue index: %s",
 		       strerror(errno));
 		panic();
 	}
@@ -367,11 +368,11 @@ uint32_t getPresentQueueIndex(uint32_t *pPresentQueueIndex,
 		if (res == VK_SUCCESS && surfaceSupport) {
 			*pPresentQueueIndex = i;
 			free(arr);
-			return (ESUCCESS);
+			return (ERR_NONE);
 		}
 	}
 	free(arr);
-	return (ENOTSUPPORTED);
+	return (ERR_NOTSUPPORTED);
 }
 
 uint32_t new_Device(VkDevice *pDevice, const VkPhysicalDevice physicalDevice,
@@ -401,17 +402,17 @@ uint32_t new_Device(VkDevice *pDevice, const VkPhysicalDevice physicalDevice,
 	VkResult res =
 	    vkCreateDevice(physicalDevice, &createInfo, NULL, pDevice);
 	if (res != VK_SUCCESS) {
-		errLog(ERROR, "Failed to create device, error code: %d",
-		       (uint32_t)res);
+		errLog(ERROR, "failed to create device, error: %s",
+		       vkstrerror(res));
 		panic();
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 uint32_t getQueue(VkQueue *pQueue, const VkDevice device,
 		  const uint32_t deviceQueueIndex) {
 	vkGetDeviceQueue(device, deviceQueueIndex, 0, pQueue);
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 uint32_t new_SwapChain(VkSwapchainKHR *pSwapChain,
@@ -462,11 +463,11 @@ uint32_t new_SwapChain(VkSwapchainKHR *pSwapChain,
 	VkResult res =
 	    vkCreateSwapchainKHR(device, &createInfo, NULL, pSwapChain);
 	if (res != VK_SUCCESS) {
-		errLog(ERROR, "Failed to create swap chain, error code: %d",
-		       (uint32_t)res);
+		errLog(ERROR, "failed to create swap chain, error code: %s",
+		       vkstrerror(res));
 		panic();
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_SwapChain(VkSwapchainKHR *pSwapChain, const VkDevice device) {
@@ -492,7 +493,7 @@ uint32_t getPreferredSurfaceFormat(VkSurfaceFormatKHR *pSurfaceFormat,
 		    physicalDevice, surface, &formatCount, pSurfaceFormats);
 	} else {
 		pSurfaceFormats = NULL;
-		return (ENOTSUPPORTED);
+		return (ERR_NOTSUPPORTED);
 	}
 
 	VkSurfaceFormatKHR preferredFormat;
@@ -532,7 +533,7 @@ uint32_t new_SwapChainImages(VkImage **ppSwapChainImages, uint32_t *pImageCount,
 
 	if (pImageCount == 0) {
 		errLog(WARN, "cannot create zero images");
-		return (EUNSAFE);
+		return (ERR_UNSAFE);
 	}
 
 	*ppSwapChainImages = malloc((*pImageCount) * sizeof(VkImage));
@@ -546,9 +547,9 @@ uint32_t new_SwapChainImages(VkImage **ppSwapChainImages, uint32_t *pImageCount,
 	if (res != VK_SUCCESS) {
 		errLog(WARN, "failed to get swap chain images, error: %s",
 		       vkstrerror(res));
-		return (EOPFAIL);
+		return (ERR_UNKNOWN);
 	} else {
-		return (ESUCCESS);
+		return (ERR_NONE);
 	}
 }
 
@@ -575,11 +576,11 @@ uint32_t new_ImageView(VkImageView *pImageView, const VkDevice device,
 	createInfo.subresourceRange.layerCount = 1;
 	VkResult ret = vkCreateImageView(device, &createInfo, NULL, pImageView);
 	if (ret != VK_SUCCESS) {
-		errLog(FATAL, "could not create image view, error code: %d",
-		       (uint32_t)ret);
+		errLog(FATAL, "failed to create image view, error: %s",
+		       vkstrerror(ret));
 		panic();
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_ImageView(VkImageView *pImageView, VkDevice device) {
@@ -592,7 +593,7 @@ uint32_t new_SwapChainImageViews(VkImageView **ppImageViews,
 				 const VkImage *pSwapChainImages) {
 	if (imageCount == 0) {
 		errLog(WARN, "cannot create zero image views");
-		return (EUNSAFE);
+		return (ERR_UNSAFE);
 	}
 	VkImageView *pImageViews = malloc(imageCount * sizeof(VkImageView));
 	if (!pImageViews) {
@@ -606,14 +607,14 @@ uint32_t new_SwapChainImageViews(VkImageView **ppImageViews,
 					     pSwapChainImages[i], format);
 		if (ret != VK_SUCCESS) {
 			errLog(FATAL,
-			       "could not create image view, error code: %d",
-			       (uint32_t)ret);
+			       "failed to create image view, error: %s",
+			       vkstrerror(ret));
 			panic();
 		}
 	}
 
 	*ppImageViews = pImageViews;
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_SwapChainImageViews(VkImageView **ppImageViews, uint32_t imageCount,
@@ -636,7 +637,7 @@ uint32_t new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
 	if (res != VK_SUCCESS) {
 		errLog(FATAL, "failed to create shader module");
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 uint32_t new_ShaderModuleFromFile(VkShaderModule *pShaderModule,
@@ -654,7 +655,7 @@ void delete_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device) {
 	vkDestroyShaderModule(device, *pShaderModule, NULL);
 }
 
-uint32_t new_RenderPass(VkRenderPass *pRenderPass, const VkDevice device,
+uint32_t new_VertexDisplayRenderPass(VkRenderPass *pRenderPass, const VkDevice device,
 			const VkFormat swapChainImageFormat) {
 	VkAttachmentDescription colorAttachment = {0};
 	colorAttachment.format = swapChainImageFormat;
@@ -697,18 +698,18 @@ uint32_t new_RenderPass(VkRenderPass *pRenderPass, const VkDevice device,
 	VkResult res =
 	    vkCreateRenderPass(device, &renderPassInfo, NULL, pRenderPass);
 	if (res != VK_SUCCESS) {
-		errLog(FATAL, "Could not create render pass, error: %d",
-		       (uint32_t)res);
+		errLog(FATAL, "failed to create render pass, error: %s",
+		       vkstrerror(res));
 		panic();
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_RenderPass(VkRenderPass *pRenderPass, const VkDevice device) {
 	vkDestroyRenderPass(device, *pRenderPass, NULL);
 }
 
-uint32_t new_PipelineLayout(VkPipelineLayout *pPipelineLayout,
+uint32_t new_VertexDisplayPipelineLayout(VkPipelineLayout *pPipelineLayout,
 			    const VkDevice device) {
 	VkPipelineLayoutCreateInfo pipelineLayoutInfo = {0};
 	pipelineLayoutInfo.sType =
@@ -718,11 +719,11 @@ uint32_t new_PipelineLayout(VkPipelineLayout *pPipelineLayout,
 	VkResult res = vkCreatePipelineLayout(device, &pipelineLayoutInfo, NULL,
 					      pPipelineLayout);
 	if (res != VK_SUCCESS) {
-		errLog(FATAL, "failed to create pipeline layout with error: %d",
-		       (uint32_t)res);
+		errLog(FATAL, "failed to create pipeline layout with error: %s",
+		       vkstrerror(res));
 		panic();
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_PipelineLayout(VkPipelineLayout *pPipelineLayout,
@@ -730,7 +731,7 @@ void delete_PipelineLayout(VkPipelineLayout *pPipelineLayout,
 	vkDestroyPipelineLayout(device, *pPipelineLayout, NULL);
 }
 
-uint32_t new_GraphicsPipeline(VkPipeline *pGraphicsPipeline,
+uint32_t new_VertexDisplayPipeline(VkPipeline *pGraphicsPipeline,
 			      const VkDevice device,
 			      const VkShaderModule vertShaderModule,
 			      const VkShaderModule fragShaderModule,
@@ -842,7 +843,7 @@ uint32_t new_GraphicsPipeline(VkPipeline *pGraphicsPipeline,
 		errLog(FATAL, "failed to create graphics pipeline!");
 		panic();
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_Pipeline(VkPipeline *pPipeline, const VkDevice device) {
@@ -864,11 +865,11 @@ uint32_t new_Framebuffer(VkFramebuffer *pFramebuffer, const VkDevice device,
 	VkResult res =
 	    vkCreateFramebuffer(device, &framebufferInfo, NULL, pFramebuffer);
 	if (res == VK_SUCCESS) {
-		return (ESUCCESS);
+		return (ERR_NONE);
 	} else {
 		errLog(WARN, "failed to create framebuffers: %s",
 		       vkstrerror(res));
-		return (EOPFAIL);
+		return (ERR_UNKNOWN);
 	}
 }
 
@@ -902,7 +903,7 @@ uint32_t new_SwapChainFramebuffers(VkFramebuffer **ppFramebuffers,
 	}
 
 	*ppFramebuffers = tmp;
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_SwapChainFramebuffers(VkFramebuffer **ppFramebuffers,
@@ -945,7 +946,7 @@ uint32_t new_GraphicsCommandBuffers(
 	VkCommandBuffer *pCommandBuffers =
 	    malloc(swapChainFramebufferCount * sizeof(VkCommandBuffer));
 	if (!pCommandBuffers) {
-		errLog(FATAL, "Failed to create graphics command buffers: %s",
+		errLog(FATAL, "failed to create graphics command buffers: %s",
 		       strerror(errno));
 		panic();
 	}
@@ -955,8 +956,8 @@ uint32_t new_GraphicsCommandBuffers(
 	if (ret != VK_SUCCESS) {
 		errLog(
 		    FATAL,
-		    "Failed to create graphics command buffers, error code: %d",
-		    (uint32_t)ret);
+		    "failed to create graphics command buffers, error code: %s",
+		    vkstrerror(ret));
 		panic();
 	}
 
@@ -1003,8 +1004,8 @@ uint32_t new_GraphicsCommandBuffers(
 		if (ret != VK_SUCCESS) {
 			errLog(
 			    FATAL,
-			    "Failed to record command buffer, error code: %d",
-			    (uint32_t)ret);
+			    "failed to record command buffer, error: %s",
+			    vkstrerror(ret));
 			panic();
 		}
 	}
@@ -1043,7 +1044,7 @@ uint32_t new_Semaphores(VkSemaphore **ppSemaphores,
 	for (uint32_t i = 0; i < semaphoreCount; i++) {
 		new_Semaphore(&(*ppSemaphores)[i], device);
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_Semaphores(VkSemaphore **ppSemaphores,
@@ -1069,7 +1070,7 @@ uint32_t new_Fences(VkFence **ppFences, const uint32_t fenceCount,
 		    const VkDevice device) {
 	if (fenceCount == 0) {
 		errLog(WARN, "cannot allocate 0 bytes of memory");
-		return (EUNSAFE);
+		return (ERR_UNSAFE);
 	}
 	*ppFences = malloc(fenceCount * sizeof(VkDevice));
 	if (!*ppFences) {
@@ -1081,7 +1082,7 @@ uint32_t new_Fences(VkFence **ppFences, const uint32_t fenceCount,
 	for (uint32_t i = 0; i < fenceCount; i++) {
 		new_Fence(&(*ppFences)[i], device);
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_Fences(VkFence **ppFences, const uint32_t fenceCount,
@@ -1120,7 +1121,7 @@ uint32_t drawFrame(uint32_t *pCurrentFrame, const uint32_t maxFramesInFlight,
 				  VK_NULL_HANDLE, &imageIndex);
 
 	if (nextImageResult == VK_ERROR_OUT_OF_DATE_KHR) {
-		return (EOUTOFDATE);
+		return (ERR_OUTOFDATE);
 	} else if (nextImageResult != VK_SUCCESS) {
 		errLog(FATAL, "failed to get next frame: %s",
 		       vkstrerror(nextImageResult));
@@ -1169,7 +1170,7 @@ uint32_t drawFrame(uint32_t *pCurrentFrame, const uint32_t maxFramesInFlight,
 	vkQueuePresentKHR(presentQueue, &presentInfo);
 	*pCurrentFrame = (*pCurrentFrame + 1) % maxFramesInFlight;
 
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 void delete_Surface(VkSurfaceKHR *pSurface, const VkInstance instance) {
@@ -1182,7 +1183,7 @@ uint32_t getWindowExtent(VkExtent2D *pExtent, GLFWwindow *pWindow) {
 	glfwGetFramebufferSize(pWindow, &width, &height);
 	pExtent->width = (uint32_t)width;
 	pExtent->height = (uint32_t)height;
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
 uint32_t new_GLFWwindow(GLFWwindow **ppGLFWwindow) {
@@ -1191,12 +1192,12 @@ uint32_t new_GLFWwindow(GLFWwindow **ppGLFWwindow) {
 	*ppGLFWwindow =
 	    glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, APPNAME, NULL, NULL);
 	if (*ppGLFWwindow == NULL) {
-		return (EOPFAIL);
+		return (ERR_UNKNOWN);
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }
 
-uint32_t new_Surface(VkSurfaceKHR *pSurface, GLFWwindow *pWindow,
+uint32_t new_SurfaceFromGLFW(VkSurfaceKHR *pSurface, GLFWwindow *pWindow,
 		     const VkInstance instance) {
 	VkResult res =
 	    glfwCreateWindowSurface(instance, pWindow, NULL, pSurface);
@@ -1204,5 +1205,5 @@ uint32_t new_Surface(VkSurfaceKHR *pSurface, GLFWwindow *pWindow,
 		errLog(FATAL, "failed to create surface, quitting");
 		panic();
 	}
-	return (ESUCCESS);
+	return (ERR_NONE);
 }

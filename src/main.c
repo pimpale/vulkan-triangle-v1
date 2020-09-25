@@ -46,7 +46,7 @@ int main(void) {
 	GLFWwindow* pWindow;
 	new_GLFWwindow(&pWindow);
 	VkSurfaceKHR surface;
-	new_Surface(&surface, pWindow, instance);
+	new_SurfaceFromGLFW(&surface, pWindow, instance);
 
 	/* find queues on graphics device */
 	uint32_t graphicsIndex;
@@ -128,13 +128,13 @@ int main(void) {
 
 	/* Create graphics pipeline */
 	VkRenderPass renderPass;
-	new_RenderPass(&renderPass, device, surfaceFormat.format);
+	new_VertexDisplayRenderPass(&renderPass, device, surfaceFormat.format);
 
 	VkPipelineLayout graphicsPipelineLayout;
-	new_PipelineLayout(&graphicsPipelineLayout, device);
+	new_VertexDisplayPipelineLayout(&graphicsPipelineLayout, device);
 
 	VkPipeline graphicsPipeline;
-	new_GraphicsPipeline(&graphicsPipeline, device, vertShaderModule,
+	new_VertexDisplayPipeline(&graphicsPipeline, device, vertShaderModule,
 			     fragShaderModule, swapChainExtent, renderPass,
 			     graphicsPipelineLayout);
 
@@ -169,7 +169,7 @@ int main(void) {
 		    pImageAvailableSemaphores, pRenderFinishedSemaphores,
 		    graphicsQueue, presentQueue);
 
-		if (result == EOUTOFDATE) {
+		if (result == ERR_OUTOFDATE) {
 			vkDeviceWaitIdle(device);
 			delete_Fences(&pInFlightFences, swapChainImageCount,
 				      device);
@@ -206,10 +206,10 @@ int main(void) {
 			    swapChainImageCount, pSwapChainImages);
 
 			/* Create graphics pipeline */
-			new_RenderPass(&renderPass, device,
+			new_VertexDisplayRenderPass(&renderPass, device,
 				       surfaceFormat.format);
-			new_PipelineLayout(&graphicsPipelineLayout, device);
-			new_GraphicsPipeline(&graphicsPipeline, device,
+			new_VertexDisplayPipelineLayout(&graphicsPipelineLayout, device);
+			new_VertexDisplayPipeline(&graphicsPipeline, device,
 					     vertShaderModule, fragShaderModule,
 					     swapChainExtent, renderPass,
 					     graphicsPipelineLayout);
