@@ -1,4 +1,4 @@
-TARGET_EXEC ?= "plant-simulator"
+TARGET_EXEC ?= "vulkan-triangle"
 
 BUILD_DIR ?= ./obj
 SRC_DIRS ?= src
