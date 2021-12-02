@@ -11,21 +11,25 @@
 #include <string.h>
 #include <errno.h>
 
-#include <vulkan/vulkan.h>
-#define GLFW_DEFINE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include "constants.h"
 #include "errors.h"
 #include "utils.h"
 
-uint64_t getLength(FILE* f) {
-	uint64_t currentpos = ftell(f);
+static long getLength(FILE* f) {
+	// get current position in file
+	long currentpos = ftell(f);
+
+	// go to end and find length
 	fseek(f, 0, SEEK_END);
-	uint64_t size = ftell(f);
+	long  size = ftell(f);
+
+	// restore current position
 	fseek(f, currentpos, SEEK_SET);
+
+	// return size
 	return (size);
 }
+
 /**
  * Mallocs
  */
@@ -36,28 +40,44 @@ void readShaderFile(const char* filename, uint32_t* length, uint32_t** code) {
 		panic();
 	}
 
-	uint32_t filesize = getLength(fp);
-	uint32_t filesizepadded = (
-			filesize % 4 == 0 ? filesize * 4 : (filesize + 1) * 4) / 4;
+	long rawfilesize = getLength(fp);
 
-	char *str = malloc(filesizepadded);
-	if (!str) {
+  if(rawfilesize < 0 || rawfilesize > UINT32_MAX) {
+      errLog(FATAL, "File size is invalid.");
+      fclose(fp);
+      panic();
+  }
+
+  uint32_t filesize = (uint32_t)rawfilesize;
+
+  // align the filesize to a multiple of 4
+	uint32_t filesizepadded = (filesize + 3) & ~0x3u;
+
+	uint32_t *data = malloc(filesizepadded);
+	if (!data) {
+		errLog(FATAL, "Could not allocate space for shader file: %s\n", strerror(errno));
+		fclose(fp);
+		panic();
+	}
+
+	size_t bytes_read = fread(data, filesize, 1, fp);
+
+  // handle if we were unable to read the shader file
+	if(bytes_read < filesize) {
 		errLog(FATAL, "Could not read shader file: %s\n", strerror(errno));
 		fclose(fp);
 		panic();
-		return;
 	}
 
-	fread(str, filesize, sizeof(char), fp);
 	fclose(fp);
 
-	/*pad data*/
+	// pad the rest of the bytes
 	for (uint32_t i = filesize; i < filesizepadded; i++) {
-		str[i] = 0;
+		data[i] = 0;
 	}
 
-	/*set up*/
+	// return data
 	*length = filesizepadded;
-	*code = (uint32_t*) str;
+	*code = data;
 	return;
 }

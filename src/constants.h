@@ -9,7 +9,6 @@
 #define CONSTANTS_H_
 
 #define APPNAME "Vulkan Triangle"
-#define DEBUG 1
 
 #define MAX_PRINT_LENGTH 4096
 

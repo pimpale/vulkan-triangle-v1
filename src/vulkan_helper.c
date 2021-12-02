@@ -106,9 +106,6 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 		case VK_DEBUG_UTILS_MESSAGE_SEVERITY_FLAG_BITS_MAX_ENUM_EXT:
 			errcode = UNKNOWN;
 			break;
-		default:
-			errcode = UNKNOWN;
-			break;
 	}
 	/* log error */
 	errLog(errcode, "Vulkan validation layer: %s", pCallbackData->pMessage);

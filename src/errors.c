@@ -17,7 +17,7 @@
 
 #include "errors.h"
 
-void errLog(int level, const char* message, ...) {
+void errLog(uint32_t level, const char* message, ...) {
 	char* errmsg;
 	FILE* out;
 
@@ -62,6 +62,5 @@ void errLog(int level, const char* message, ...) {
 
 	fprintf(out, "%s: %s: %s\n", APPNAME, errmsg, message_formatted);
 }
-
 
 void panic() { exit(EXIT_FAILURE); }

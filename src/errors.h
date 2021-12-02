@@ -8,12 +8,14 @@
 #ifndef ERRORS_H_
 #define ERRORS_H_
 
-#define DEBUG 1
-#define INFO 2
-#define WARN 3
-#define ERROR 4
-#define FATAL 5
-#define UNKNOWN 6
+#include <stdint.h>
+
+#define DEBUG 1u
+#define INFO 2u
+#define WARN 3u
+#define ERROR 4u
+#define FATAL 5u
+#define UNKNOWN 6u
 
 #define DEBUG_MSG "debug"
 #define INFO_MSG "info"
@@ -31,9 +33,9 @@
 #define ERR_UNKNOWN 4
 #define ERR_OUTOFDATE 5
 
-void errLog(int level, const char* message, ...);
+void errLog(uint32_t level, const char* message, ...);
 
 
-void panic();
+void panic(void) __attribute__((noreturn));
 
 #endif /* ERRORS_H_ */
