@@ -53,7 +53,7 @@ ErrVal new_Instance(VkInstance *pInstance, const uint32_t enabledLayerCount,
 
   // this variable represents the total number of extensions (including debug
   // and glfw)
-  size_t allExtensionCount = enabledExtensionCount;
+  uint32_t allExtensionCount = enabledExtensionCount;
 
   if (enableGLFWRequiredExtensions) {
     uint32_t glfwExtensionCount = 0;
@@ -88,7 +88,7 @@ ErrVal new_Instance(VkInstance *pInstance, const uint32_t enabledLayerCount,
         glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
 
     // copy each name to the total list of extensions
-    for (int i = 0; i < glfwExtensionCount; i++) {
+    for (size_t i = 0; i < glfwExtensionCount; i++) {
       ppAllExtensionNames[currentPosition] = glfwExtensionNames[i];
       currentPosition++;
     }
@@ -101,7 +101,7 @@ ErrVal new_Instance(VkInstance *pInstance, const uint32_t enabledLayerCount,
   }
 
   // append our custom enabled extensions
-  for (int i = 0; i < enabledExtensionCount; i++) {
+  for (size_t i = 0; i < enabledExtensionCount; i++) {
     ppAllExtensionNames[currentPosition] = ppEnabledExtensionNames[i];
     currentPosition++;
   }
@@ -312,15 +312,13 @@ ErrVal getPresentQueueFamilyIndex(uint32_t *pQueueFamilyIndex,
 }
 
 ErrVal new_Device(VkDevice *pDevice, const VkPhysicalDevice physicalDevice,
-                  const uint32_t deviceQueueIndex,
+                  const uint32_t queueFamilyIndex,
                   const uint32_t enabledExtensionCount,
-                  const char *const *ppEnabledExtensionNames,
-                  const uint32_t enabledLayerCount,
-                  const char *const *ppEnabledLayerNames) {
+                  const char *const *ppEnabledExtensionNames) {
   VkPhysicalDeviceFeatures deviceFeatures = {0};
   VkDeviceQueueCreateInfo queueCreateInfo = {0};
   queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-  queueCreateInfo.queueFamilyIndex = deviceQueueIndex;
+  queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
   queueCreateInfo.queueCount = 1;
   float queuePriority = 1.0f;
   queueCreateInfo.pQueuePriorities = &queuePriority;
@@ -332,8 +330,7 @@ ErrVal new_Device(VkDevice *pDevice, const VkPhysicalDevice physicalDevice,
   createInfo.pEnabledFeatures = &deviceFeatures;
   createInfo.enabledExtensionCount = enabledExtensionCount;
   createInfo.ppEnabledExtensionNames = ppEnabledExtensionNames;
-  createInfo.enabledLayerCount = enabledLayerCount;
-  createInfo.ppEnabledLayerNames = ppEnabledLayerNames;
+  createInfo.enabledLayerCount = 0;
 
   VkResult res = vkCreateDevice(physicalDevice, &createInfo, NULL, pDevice);
   if (res != VK_SUCCESS) {
@@ -350,8 +347,8 @@ ErrVal getQueue(VkQueue *pQueue, const VkDevice device,
   return (ERR_OK);
 }
 
-ErrVal new_SwapChain(VkSwapchainKHR *pSwapChain, uint32_t *pSwapChainImageCount,
-                     const VkSwapchainKHR oldSwapChain,
+ErrVal new_Swapchain(VkSwapchainKHR *pSwapchain, uint32_t *pSwapchainImageCount,
+                     const VkSwapchainKHR oldSwapchain,
                      const VkSurfaceFormatKHR surfaceFormat,
                      const VkPhysicalDevice physicalDevice,
                      const VkDevice device, const VkSurfaceKHR surface,
@@ -361,16 +358,16 @@ ErrVal new_SwapChain(VkSwapchainKHR *pSwapChain, uint32_t *pSwapChainImageCount,
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
                                             &capabilities);
 
-  *pSwapChainImageCount = capabilities.minImageCount + 1;
+  *pSwapchainImageCount = capabilities.minImageCount + 1;
   if (capabilities.maxImageCount > 0 &&
-      *pSwapChainImageCount > capabilities.maxImageCount) {
-    *pSwapChainImageCount = capabilities.maxImageCount;
+      *pSwapchainImageCount > capabilities.maxImageCount) {
+    *pSwapchainImageCount = capabilities.maxImageCount;
   }
 
   VkSwapchainCreateInfoKHR createInfo = {0};
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
   createInfo.surface = surface;
-  createInfo.minImageCount = *pSwapChainImageCount;
+  createInfo.minImageCount = *pSwapchainImageCount;
   createInfo.imageFormat = surfaceFormat.format;
   createInfo.imageColorSpace = surfaceFormat.colorSpace;
   createInfo.imageExtent = extent;
@@ -393,8 +390,8 @@ ErrVal new_SwapChain(VkSwapchainKHR *pSwapChain, uint32_t *pSwapChainImageCount,
   /* guaranteed to be available */
   createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
   createInfo.clipped = VK_TRUE;
-  createInfo.oldSwapchain = oldSwapChain;
-  VkResult res = vkCreateSwapchainKHR(device, &createInfo, NULL, pSwapChain);
+  createInfo.oldSwapchain = oldSwapchain;
+  VkResult res = vkCreateSwapchainKHR(device, &createInfo, NULL, pSwapchain);
   if (res != VK_SUCCESS) {
     LOG_ERROR_ARGS(ERR_LEVEL_ERROR,
                    "Failed to create swap chain, error code: %s",
@@ -404,9 +401,9 @@ ErrVal new_SwapChain(VkSwapchainKHR *pSwapChain, uint32_t *pSwapChainImageCount,
   return (ERR_OK);
 }
 
-void delete_SwapChain(VkSwapchainKHR *pSwapChain, const VkDevice device) {
-  vkDestroySwapchainKHR(device, *pSwapChain, NULL);
-  *pSwapChain = VK_NULL_HANDLE;
+void delete_Swapchain(VkSwapchainKHR *pSwapchain, const VkDevice device) {
+  vkDestroySwapchainKHR(device, *pSwapchain, NULL);
+  *pSwapchain = VK_NULL_HANDLE;
 }
 
 ErrVal getPreferredSurfaceFormat(VkSurfaceFormatKHR *pSurfaceFormat,
@@ -458,24 +455,24 @@ ErrVal getPreferredSurfaceFormat(VkSurfaceFormatKHR *pSurfaceFormat,
   return (ERR_OK);
 }
 
-ErrVal new_SwapChainImages(VkImage **ppSwapChainImages, uint32_t *pImageCount,
+ErrVal new_SwapchainImages(VkImage **ppSwapchainImages, uint32_t *pImageCount,
                            const VkDevice device,
-                           const VkSwapchainKHR swapChain) {
-  vkGetSwapchainImagesKHR(device, swapChain, pImageCount, NULL);
+                           const VkSwapchainKHR swapchain) {
+  vkGetSwapchainImagesKHR(device, swapchain, pImageCount, NULL);
 
   if (pImageCount == 0) {
     LOG_ERROR(ERR_LEVEL_WARN, "cannot create zero images");
     return (ERR_UNSAFE);
   }
 
-  *ppSwapChainImages = (VkImage *)malloc((*pImageCount) * sizeof(VkImage));
-  if (!*ppSwapChainImages) {
+  *ppSwapchainImages = (VkImage *)malloc((*pImageCount) * sizeof(VkImage));
+  if (!*ppSwapchainImages) {
     LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to get swap chain images: %s",
                    strerror(errno));
     PANIC();
   }
-  VkResult res = vkGetSwapchainImagesKHR(device, swapChain, pImageCount,
-                                         *ppSwapChainImages);
+  VkResult res = vkGetSwapchainImagesKHR(device, swapchain, pImageCount,
+                                         *ppSwapchainImages);
   if (res != VK_SUCCESS) {
     LOG_ERROR_ARGS(ERR_LEVEL_WARN, "failed to get swap chain images, error: %s",
                    vkstrerror(res));
@@ -485,7 +482,7 @@ ErrVal new_SwapChainImages(VkImage **ppSwapChainImages, uint32_t *pImageCount,
   }
 }
 
-void delete_SwapChainImages(VkImage **ppImages) {
+void delete_SwapchainImages(VkImage **ppImages) {
   free(*ppImages);
   *ppImages = NULL;
 }
@@ -522,10 +519,10 @@ void delete_ImageView(VkImageView *pImageView, VkDevice device) {
   *pImageView = VK_NULL_HANDLE;
 }
 
-ErrVal new_SwapChainImageViews(VkImageView **ppImageViews,
+ErrVal new_SwapchainImageViews(VkImageView **ppImageViews,
                                const VkDevice device, const VkFormat format,
                                const uint32_t imageCount,
-                               const VkImage *pSwapChainImages) {
+                               const VkImage *pSwapchainImages) {
   if (imageCount == 0) {
     LOG_ERROR(ERR_LEVEL_WARN, "cannot create zero image views");
     return (ERR_BADARGS);
@@ -540,11 +537,11 @@ ErrVal new_SwapChainImageViews(VkImageView **ppImageViews,
   }
 
   for (uint32_t i = 0; i < imageCount; i++) {
-    ErrVal ret = new_ImageView(&(pImageViews[i]), device, pSwapChainImages[i],
+    ErrVal ret = new_ImageView(&(pImageViews[i]), device, pSwapchainImages[i],
                                format, VK_IMAGE_ASPECT_COLOR_BIT);
     if (ret != ERR_OK) {
       LOG_ERROR(ERR_LEVEL_ERROR, "could not create swap chain image views");
-      delete_SwapChainImageViews(ppImageViews, i, device);
+      delete_SwapchainImageViews(ppImageViews, i, device);
       return (ret);
     }
   }
@@ -553,7 +550,7 @@ ErrVal new_SwapChainImageViews(VkImageView **ppImageViews,
   return (ERR_OK);
 }
 
-void delete_SwapChainImageViews(VkImageView **ppImageViews, uint32_t imageCount,
+void delete_SwapchainImageViews(VkImageView **ppImageViews, uint32_t imageCount,
                                 const VkDevice device) {
   for (uint32_t i = 0; i < imageCount; i++) {
     delete_ImageView(&((*ppImageViews)[i]), device);
@@ -598,9 +595,9 @@ void delete_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device) {
 
 ErrVal new_VertexDisplayRenderPass(VkRenderPass *pRenderPass,
                                    const VkDevice device,
-                                   const VkFormat swapChainImageFormat) {
+                                   const VkFormat swapchainImageFormat) {
   VkAttachmentDescription colorAttachment = {0};
-  colorAttachment.format = swapChainImageFormat;
+  colorAttachment.format = swapchainImageFormat;
   colorAttachment.samples = VK_SAMPLE_COUNT_1_BIT;
   colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
   colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -726,7 +723,7 @@ ErrVal new_VertexDisplayPipeline(VkPipeline *pGraphicsPipeline,
 
   VkVertexInputBindingDescription bindingDescription = {0};
   bindingDescription.binding = 0;
-  bindingDescription.stride = sizeof(Vetex);
+  bindingDescription.stride = sizeof(Vertex);
   bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
   VkVertexInputAttributeDescription attributeDescriptions[2];
@@ -850,14 +847,14 @@ ErrVal new_Framebuffer(VkFramebuffer *pFramebuffer, const VkDevice device,
                        const VkRenderPass renderPass,
                        const VkImageView imageView,
                        const VkImageView depthImageView,
-                       const VkExtent2D swapChainExtent) {
+                       const VkExtent2D swapchainExtent) {
   VkFramebufferCreateInfo framebufferInfo = {0};
   framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   framebufferInfo.renderPass = renderPass;
   framebufferInfo.attachmentCount = 2;
   framebufferInfo.pAttachments = (VkImageView[]){imageView, depthImageView};
-  framebufferInfo.width = swapChainExtent.width;
-  framebufferInfo.height = swapChainExtent.height;
+  framebufferInfo.width = swapchainExtent.width;
+  framebufferInfo.height = swapchainExtent.height;
   framebufferInfo.layers = 1;
   VkResult res =
       vkCreateFramebuffer(device, &framebufferInfo, NULL, pFramebuffer);
@@ -875,13 +872,13 @@ void delete_Framebuffer(VkFramebuffer *pFramebuffer, VkDevice device) {
   *pFramebuffer = VK_NULL_HANDLE;
 }
 
-ErrVal new_SwapChainFramebuffers(VkFramebuffer **ppFramebuffers,
+ErrVal new_SwapchainFramebuffers(VkFramebuffer **ppFramebuffers,
                                  const VkDevice device,
                                  const VkRenderPass renderPass,
-                                 const VkExtent2D swapChainExtent,
+                                 const VkExtent2D swapchainExtent,
                                  const uint32_t imageCount,
                                  const VkImageView depthImageView,
-                                 const VkImageView *pSwapChainImageViews) {
+                                 const VkImageView *pSwapchainImageViews) {
   *ppFramebuffers = (VkFramebuffer *)malloc(imageCount * sizeof(VkFramebuffer));
   if (!(*ppFramebuffers)) {
     LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "could not create framebuffers: %s",
@@ -891,18 +888,18 @@ ErrVal new_SwapChainFramebuffers(VkFramebuffer **ppFramebuffers,
 
   for (uint32_t i = 0; i < imageCount; i++) {
     ErrVal retVal = new_Framebuffer(&((*ppFramebuffers)[i]), device, renderPass,
-                                    pSwapChainImageViews[i], depthImageView,
-                                    swapChainExtent);
+                                    pSwapchainImageViews[i], depthImageView,
+                                    swapchainExtent);
     if (retVal != ERR_OK) {
       LOG_ERROR(ERR_LEVEL_ERROR, "could not create framebuffers");
-      delete_SwapChainFramebuffers(ppFramebuffers, i, device);
+      delete_SwapchainFramebuffers(ppFramebuffers, i, device);
       return (retVal);
     }
   }
   return (ERR_OK);
 }
 
-void delete_SwapChainFramebuffers(VkFramebuffer **ppFramebuffers,
+void delete_SwapchainFramebuffers(VkFramebuffer **ppFramebuffers,
                                   const uint32_t imageCount,
                                   const VkDevice device) {
   for (uint32_t i = 0; i < imageCount; i++) {
@@ -937,16 +934,16 @@ ErrVal new_VertexDisplayCommandBuffers(
     const VkRenderPass renderPass,
     const VkPipelineLayout vertexDisplayPipelineLayout,
     const VkPipeline vertexDisplayPipeline, const VkCommandPool commandPool,
-    const VkExtent2D swapChainExtent, const uint32_t swapChainFramebufferCount,
-    const VkFramebuffer *pSwapChainFramebuffers, const mat4x4 cameraTransform) {
+    const VkExtent2D swapchainExtent, const uint32_t swapchainFramebufferCount,
+    const VkFramebuffer *pSwapchainFramebuffers, const mat4x4 cameraTransform) {
   VkCommandBufferAllocateInfo allocInfo = {0};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.commandPool = commandPool;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandBufferCount = swapChainFramebufferCount;
+  allocInfo.commandBufferCount = swapchainFramebufferCount;
 
   VkCommandBuffer *pCommandBuffers = (VkCommandBuffer *)malloc(
-      swapChainFramebufferCount * sizeof(VkCommandBuffer));
+      swapchainFramebufferCount * sizeof(VkCommandBuffer));
   if (!pCommandBuffers) {
     LOG_ERROR_ARGS(ERR_LEVEL_FATAL,
                    "Failed to create graphics command buffers: %s",
@@ -963,7 +960,7 @@ ErrVal new_VertexDisplayCommandBuffers(
     PANIC();
   }
 
-  for (size_t i = 0; i < swapChainFramebufferCount; i++) {
+  for (size_t i = 0; i < swapchainFramebufferCount; i++) {
     VkCommandBufferBeginInfo beginInfo = {0};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -977,9 +974,9 @@ ErrVal new_VertexDisplayCommandBuffers(
     VkRenderPassBeginInfo renderPassInfo = {0};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = pSwapChainFramebuffers[i];
+    renderPassInfo.framebuffer = pSwapchainFramebuffers[i];
     renderPassInfo.renderArea.offset = (VkOffset2D){0, 0};
-    renderPassInfo.renderArea.extent = swapChainExtent;
+    renderPassInfo.renderArea.extent = swapchainExtent;
 
     VkClearValue pClearColors[2];
     pClearColors[0].color.float32[0] = 0.0f;
@@ -1137,7 +1134,7 @@ void delete_Fences(VkFence **ppFences, const uint32_t fenceCount,
 /* Draws a frame to the surface provided, and sets things up for the next frame
  */
 uint32_t drawFrame(uint32_t *pCurrentFrame, const uint32_t maxFramesInFlight,
-                   const VkDevice device, const VkSwapchainKHR swapChain,
+                   const VkDevice device, const VkSwapchainKHR swapchain,
                    const VkCommandBuffer *pCommandBuffers,
                    const VkFence *pInFlightFences,
                    const VkSemaphore *pImageAvailableSemaphores,
@@ -1162,7 +1159,7 @@ uint32_t drawFrame(uint32_t *pCurrentFrame, const uint32_t maxFramesInFlight,
   /* Gets the next image from the swap Chain */
   uint32_t imageIndex;
   VkResult nextImageResult = vkAcquireNextImageKHR(
-      device, swapChain, UINT64_MAX, pImageAvailableSemaphores[*pCurrentFrame],
+      device, swapchain, UINT64_MAX, pImageAvailableSemaphores[*pCurrentFrame],
       VK_NULL_HANDLE, &imageIndex);
   /* If the window has been resized, the result will be an out of date error,
    * meaning that the swap chain must be resized */
@@ -1207,9 +1204,9 @@ uint32_t drawFrame(uint32_t *pCurrentFrame, const uint32_t maxFramesInFlight,
   presentInfo.waitSemaphoreCount = 1;
   presentInfo.pWaitSemaphores = signalSemaphores;
 
-  VkSwapchainKHR swapChains[] = {swapChain};
+  VkSwapchainKHR swapchains[] = {swapchain};
   presentInfo.swapchainCount = 1;
-  presentInfo.pSwapchains = swapChains;
+  presentInfo.pSwapchains = swapchains;
 
   presentInfo.pImageIndices = &imageIndex;
 
@@ -1243,7 +1240,7 @@ ErrVal new_GlfwWindow(GLFWwindow **ppGlfwWindow, const char *name,
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
   *ppGlfwWindow =
-      glfwCreateWindow(dimensions.width, dimensions.height, name, NULL, NULL);
+      glfwCreateWindow((int)dimensions.width, (int)dimensions.height, name, NULL, NULL);
   if (*ppGlfwWindow == NULL) {
     LOG_ERROR(ERR_LEVEL_ERROR, "failed to create GLFW window");
     return (ERR_UNKNOWN);
@@ -1422,6 +1419,7 @@ ErrVal copyBuffer(VkBuffer destinationBuffer, const VkBuffer sourceBuffer,
 
   return (ERR_OK);
 }
+
 
 void delete_Buffer(VkBuffer *pBuffer, const VkDevice device) {
   vkDestroyBuffer(device, *pBuffer, NULL);
@@ -1603,14 +1601,14 @@ void getDepthFormat(VkFormat *pFormat) {
 }
 
 ErrVal new_DepthImage(VkImage *pImage, VkDeviceMemory *pImageMemory,
-                      const VkExtent2D swapChainExtent,
+                      const VkExtent2D swapchainExtent,
                       const VkPhysicalDevice physicalDevice,
                       const VkDevice device) {
   VkFormat depthFormat = {0};
   getDepthFormat(&depthFormat);
   ErrVal retVal =
-      new_Image(pImage, pImageMemory, swapChainExtent.width,
-                swapChainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
+      new_Image(pImage, pImageMemory, swapchainExtent.width,
+                swapchainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, physicalDevice, device);
   if (retVal != ERR_OK) {

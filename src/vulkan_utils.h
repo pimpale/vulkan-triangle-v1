@@ -14,13 +14,18 @@
 
 #include <vulkan/vulkan.h>
 
-#include "linmath.h"
+#include <linmath.h>
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
 #include "errors.h"
 #include "utils.h"
+
+typedef struct {
+  vec3 position;
+  vec3 color;
+} Vertex;
 
 /// Creates a new VkInstance with the specified extensions and layers
 /// --- PRECONDITIONS ---
@@ -172,24 +177,31 @@ ErrVal getQueue(VkQueue *pQueue, const VkDevice device,
 /// * `surface` has been allocated from the same instance as `physicalDevice`
 /// --- POSTCONDITIONS ---
 /// * returns error status
-/// * 
+/// * `*pSurfaceFormat` contains a format that we can render to
 ErrVal getPreferredSurfaceFormat(VkSurfaceFormatKHR *pSurfaceFormat,
                                  const VkPhysicalDevice physicalDevice,
                                  const VkSurfaceKHR surface);
 
-ErrVal new_SwapChain(VkSwapchainKHR *pSwapChain, uint32_t *pSwapChainImageCount,
-                     const VkSwapchainKHR oldSwapChain,
+/// Creates a new swapchain, possibly reusing the old one
+/// --- PRECONDITIONS ---
+/// * All vulkan objects come from the same instance
+/// * `oldSwapchain` is a valid pointer
+/// * `pSwapchainImageCount` is a valid pointer
+/// * `oldSwapchain` is either VK_NULL_HANDLE or a swapchain created from new_Swapchain
+/// 
+ErrVal new_Swapchain(VkSwapchainKHR *pSwapchain, uint32_t *pSwapchainImageCount,
+                     const VkSwapchainKHR oldSwapchain,
                      const VkSurfaceFormatKHR surfaceFormat,
                      const VkPhysicalDevice physicalDevice,
                      const VkDevice device, const VkSurfaceKHR surface,
                      const VkExtent2D extent, const uint32_t graphicsIndex,
                      const uint32_t presentIndex);
 
-void delete_SwapChain(VkSwapchainKHR *pSwapChain, const VkDevice device);
+void delete_Swapchain(VkSwapchainKHR *pSwapchain, const VkDevice device);
 
-ErrVal new_SwapChainImages(VkImage **ppSwapChainImages, uint32_t *pImageCount,
+ErrVal new_SwapchainImages(VkImage **ppSwapchainImages, uint32_t *pImageCount,
                            const VkDevice device,
-                           const VkSwapchainKHR swapChain);
+                           const VkSwapchainKHR swapchain);
 
 ErrVal new_Image(VkImage *pImage, VkDeviceMemory *pImageMemory,
                  const uint32_t width, const uint32_t height,
@@ -200,20 +212,20 @@ ErrVal new_Image(VkImage *pImage, VkDeviceMemory *pImageMemory,
 
 void delete_Image(VkImage *pImage, const VkDevice device);
 
-void delete_SwapChainImages(VkImage **ppImages);
+void delete_SwapchainImages(VkImage **ppImages);
 
 ErrVal new_ImageView(VkImageView *pImageView, const VkDevice device,
                      const VkImage image, const VkFormat format,
                      const uint32_t aspectMask);
 
-ErrVal new_SwapChainImageViews(VkImageView **ppImageViews,
+ErrVal new_SwapchainImageViews(VkImageView **ppImageViews,
                                const VkDevice device, const VkFormat format,
                                const uint32_t imageCount,
-                               const VkImage *pSwapChainImages);
+                               const VkImage *pSwapchainImages);
 
 void delete_ImageView(VkImageView *pImageView, VkDevice device);
 
-void delete_SwapChainImageViews(VkImageView **ppImageViews, uint32_t imageCount,
+void delete_SwapchainImageViews(VkImageView **ppImageViews, uint32_t imageCount,
                                 const VkDevice device);
 
 ErrVal new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
@@ -226,7 +238,7 @@ void delete_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device);
 
 ErrVal new_VertexDisplayRenderPass(VkRenderPass *pRenderPass,
                                    const VkDevice device,
-                                   const VkFormat swapChainImageFormat);
+                                   const VkFormat swapchainImageFormat);
 
 void delete_RenderPass(VkRenderPass *pRenderPass, const VkDevice device);
 
@@ -250,19 +262,19 @@ ErrVal new_Framebuffer(VkFramebuffer *pFramebuffer, const VkDevice device,
                        const VkRenderPass renderPass,
                        const VkImageView imageView,
                        const VkImageView depthImageView,
-                       const VkExtent2D swapChainExtent);
+                       const VkExtent2D swapchainExtent);
 
 void delete_Framebuffer(VkFramebuffer *pFramebuffer, VkDevice device);
 
-ErrVal new_SwapChainFramebuffers(VkFramebuffer **ppFramebuffers,
+ErrVal new_SwapchainFramebuffers(VkFramebuffer **ppFramebuffers,
                                  const VkDevice device,
                                  const VkRenderPass renderPass,
-                                 const VkExtent2D swapChainExtent,
+                                 const VkExtent2D swapchainExtent,
                                  const uint32_t imageCount,
                                  const VkImageView depthImageView,
-                                 const VkImageView *pSwapChainImageViews);
+                                 const VkImageView *pSwapchainImageViews);
 
-void delete_SwapChainFramebuffers(VkFramebuffer **ppFramebuffers,
+void delete_SwapchainFramebuffers(VkFramebuffer **ppFramebuffers,
                                   const uint32_t imageCount,
                                   const VkDevice device);
 
@@ -277,8 +289,8 @@ ErrVal new_VertexDisplayCommandBuffers(
     const VkRenderPass renderPass,
     const VkPipelineLayout vertexDisplayPipelineLayout,
     const VkPipeline vertexDisplayPipeline, const VkCommandPool commandPool,
-    const VkExtent2D swapChainExtent, const uint32_t swapChainFramebufferCount,
-    const VkFramebuffer *pSwapChainFramebuffers, const mat4x4 cameraTransform);
+    const VkExtent2D swapchainExtent, const uint32_t swapchainFramebufferCount,
+    const VkFramebuffer *pSwapchainFramebuffers, const mat4x4 cameraTransform);
 
 void delete_CommandBuffers(VkCommandBuffer **ppCommandBuffers,
                            const uint32_t commandBufferCount,
@@ -306,7 +318,7 @@ void delete_Fences(VkFence **ppFences, const uint32_t fenceCount,
                    const VkDevice device);
 
 ErrVal drawFrame(uint32_t *pCurrentFrame, const uint32_t maxFramesInFlight,
-                 const VkDevice device, const VkSwapchainKHR swapChain,
+                 const VkDevice device, const VkSwapchainKHR swapchain,
                  const VkCommandBuffer *pCommandBuffers,
                  const VkFence *pInFlightFences,
                  const VkSemaphore *pImageAvailableSemaphores,
@@ -317,6 +329,13 @@ ErrVal new_SurfaceFromGLFW(VkSurfaceKHR *pSurface, GLFWwindow *pWindow,
                            const VkInstance instance);
 
 void delete_Surface(VkSurfaceKHR *pSurface, const VkInstance instance);
+
+ErrVal new_VertexBuffer(VkBuffer *pBuffer, VkDeviceMemory *pBufferMemory,
+                        const Vertex *pVertices, const uint32_t vertexCount,
+                        const VkDevice device,
+                        const VkPhysicalDevice physicalDevice,
+                        const VkCommandPool commandPool, const VkQueue queue);
+
 
 ErrVal new_Buffer_DeviceMemory(VkBuffer *pBuffer, VkDeviceMemory *pBufferMemory,
                                const VkDeviceSize size,
@@ -352,7 +371,7 @@ ErrVal new_DepthImageView(VkImageView *pImageView, const VkDevice device,
                           const VkImage depthImage);
 
 ErrVal new_DepthImage(VkImage *pImage, VkDeviceMemory *pImageMemory,
-                      const VkExtent2D swapChainExtent,
+                      const VkExtent2D swapchainExtent,
                       const VkPhysicalDevice physicalDevice,
                       const VkDevice device);
 

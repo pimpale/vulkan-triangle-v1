@@ -160,7 +160,7 @@ static inline void mat4x4_scale_aniso(mat4x4 M, mat4x4 a, float x, float y,
     M[3][i] = a[3][i];
   }
 }
-static inline void mat4x4_mul(mat4x4 M, mat4x4 a, mat4x4 b) {
+static inline void mat4x4_mul(mat4x4 M, const mat4x4 a, const mat4x4 b) {
   mat4x4 temp;
   int k, r, c;
   for (c = 0; c < 4; ++c)
@@ -172,7 +172,7 @@ static inline void mat4x4_mul(mat4x4 M, mat4x4 a, mat4x4 b) {
     }
   mat4x4_dup(M, temp);
 }
-static inline void mat4x4_mul_vec4(vec4 r, mat4x4 M, vec4 v) {
+static inline void mat4x4_mul_vec4(vec4 r, const mat4x4 M, const vec4 v) {
   int i, j;
   for (j = 0; j < 4; ++j) {
     r[j] = 0.0f;
@@ -197,7 +197,7 @@ static inline void mat4x4_translate_in_place(mat4x4 M, float x, float y,
     M[3][i] += vec4_mul_inner(r, t);
   }
 }
-static inline void mat4x4_from_vec3_mul_outer(mat4x4 M, vec3 a, vec3 b) {
+static inline void mat4x4_from_vec3_mul_outer(mat4x4 M, const vec3 a, const vec3 b) {
   int i, j;
   for (i = 0; i < 4; ++i)
     for (j = 0; j < 4; ++j) {
@@ -385,7 +385,7 @@ static inline void mat4x4_perspective(mat4x4 m, float y_fov, float aspect,
   m[3][2] = -((2.0f * f * n) / (f - n));
   m[3][3] = 0.0f;
 }
-static inline void mat4x4_look_at(mat4x4 m, vec3 eye, vec3 center, vec3 up) {
+static inline void mat4x4_look_at(mat4x4 m, const vec3 eye, const vec3 center, const vec3 up) {
   /* Adapted from Android's OpenGL Matrix.java.                        */
   /* See the OpenGL GLUT documentation for gluLookAt for a description */
   /* of the algorithm. We implement it in a straightforward way:       */
