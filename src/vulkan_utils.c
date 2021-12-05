@@ -1,6 +1,7 @@
 #include "vulkan_utils.h"
 
 #include <errno.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
@@ -279,8 +280,8 @@ ErrVal getQueueFamilyIndexByCapability(uint32_t *pQueueFamilyIndex,
 }
 
 ErrVal getPresentQueueFamilyIndex(uint32_t *pQueueFamilyIndex,
-                            const VkPhysicalDevice physicalDevice,
-                            const VkSurfaceKHR surface) {
+                                  const VkPhysicalDevice physicalDevice,
+                                  const VkSurfaceKHR surface) {
   uint32_t queueFamilyCount = 0;
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount,
                                            NULL);
@@ -347,7 +348,7 @@ ErrVal getQueue(VkQueue *pQueue, const VkDevice device,
   return (ERR_OK);
 }
 
-ErrVal new_Swapchain(VkSwapchainKHR *pSwapchain, uint32_t *pSwapchainImageCount,
+ErrVal new_Swapchain(VkSwapchainKHR *pSwapchain, uint32_t *pImageCount,
                      const VkSwapchainKHR oldSwapchain,
                      const VkSurfaceFormatKHR surfaceFormat,
                      const VkPhysicalDevice physicalDevice,
@@ -358,16 +359,12 @@ ErrVal new_Swapchain(VkSwapchainKHR *pSwapchain, uint32_t *pSwapchainImageCount,
   vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface,
                                             &capabilities);
 
-  *pSwapchainImageCount = capabilities.minImageCount + 1;
-  if (capabilities.maxImageCount > 0 &&
-      *pSwapchainImageCount > capabilities.maxImageCount) {
-    *pSwapchainImageCount = capabilities.maxImageCount;
-  }
-
+  // it's important to note that minImageCount isn't necessarily the size of the
+  // swapchain we get
   VkSwapchainCreateInfoKHR createInfo = {0};
   createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
   createInfo.surface = surface;
-  createInfo.minImageCount = *pSwapchainImageCount;
+  createInfo.minImageCount = capabilities.minImageCount + 1;
   createInfo.imageFormat = surfaceFormat.format;
   createInfo.imageColorSpace = surfaceFormat.colorSpace;
   createInfo.imageExtent = extent;
@@ -398,12 +395,49 @@ ErrVal new_Swapchain(VkSwapchainKHR *pSwapchain, uint32_t *pSwapchainImageCount,
                    vkstrerror(res));
     PANIC();
   }
+
+  VkResult imageCountRes =
+      vkGetSwapchainImagesKHR(device, *pSwapchain, pImageCount, NULL);
+  if (imageCountRes != VK_SUCCESS) {
+    LOG_ERROR_ARGS(ERR_LEVEL_ERROR,
+                   "Failed to retrieve swap chain image count, error code: %s",
+                   vkstrerror(res));
+    PANIC();
+  }
+
   return (ERR_OK);
 }
 
 void delete_Swapchain(VkSwapchainKHR *pSwapchain, const VkDevice device) {
   vkDestroySwapchainKHR(device, *pSwapchain, NULL);
   *pSwapchain = VK_NULL_HANDLE;
+}
+
+ErrVal getSwapchainImages(         //
+    VkImage *pSwapchainImages,     //
+    const uint32_t imageCount,     //
+    const VkDevice device,         //
+    const VkSwapchainKHR swapchain //
+) {
+
+  // we are going to try to write in imageCount images, but its possible that
+  // we get less or more
+  uint32_t imagesWritten = imageCount;
+  VkResult res = vkGetSwapchainImagesKHR(device, swapchain, &imagesWritten,
+                                         pSwapchainImages);
+  if (res != VK_SUCCESS) {
+    LOG_ERROR_ARGS(ERR_LEVEL_ERROR,
+                   "failed to get swap chain images, error: %s",
+                   vkstrerror(res));
+    return (ERR_UNKNOWN);
+  }
+
+  if (imagesWritten != imageCount) {
+    LOG_ERROR_ARGS(ERR_LEVEL_ERROR, "expected %u images, but only %u written",
+                   imageCount, imagesWritten);
+  }
+
+  return (ERR_OK);
 }
 
 ErrVal getPreferredSurfaceFormat(VkSurfaceFormatKHR *pSurfaceFormat,
@@ -455,38 +489,6 @@ ErrVal getPreferredSurfaceFormat(VkSurfaceFormatKHR *pSurfaceFormat,
   return (ERR_OK);
 }
 
-ErrVal new_SwapchainImages(VkImage **ppSwapchainImages, uint32_t *pImageCount,
-                           const VkDevice device,
-                           const VkSwapchainKHR swapchain) {
-  vkGetSwapchainImagesKHR(device, swapchain, pImageCount, NULL);
-
-  if (pImageCount == 0) {
-    LOG_ERROR(ERR_LEVEL_WARN, "cannot create zero images");
-    return (ERR_UNSAFE);
-  }
-
-  *ppSwapchainImages = (VkImage *)malloc((*pImageCount) * sizeof(VkImage));
-  if (!*ppSwapchainImages) {
-    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to get swap chain images: %s",
-                   strerror(errno));
-    PANIC();
-  }
-  VkResult res = vkGetSwapchainImagesKHR(device, swapchain, pImageCount,
-                                         *ppSwapchainImages);
-  if (res != VK_SUCCESS) {
-    LOG_ERROR_ARGS(ERR_LEVEL_WARN, "failed to get swap chain images, error: %s",
-                   vkstrerror(res));
-    return (ERR_UNKNOWN);
-  } else {
-    return (ERR_OK);
-  }
-}
-
-void delete_SwapchainImages(VkImage **ppImages) {
-  free(*ppImages);
-  *ppImages = NULL;
-}
-
 ErrVal new_ImageView(VkImageView *pImageView, const VkDevice device,
                      const VkImage image, const VkFormat format,
                      const uint32_t aspectMask) {
@@ -519,44 +521,33 @@ void delete_ImageView(VkImageView *pImageView, VkDevice device) {
   *pImageView = VK_NULL_HANDLE;
 }
 
-ErrVal new_SwapchainImageViews(VkImageView **ppImageViews,
-                               const VkDevice device, const VkFormat format,
-                               const uint32_t imageCount,
-                               const VkImage *pSwapchainImages) {
-  if (imageCount == 0) {
-    LOG_ERROR(ERR_LEVEL_WARN, "cannot create zero image views");
-    return (ERR_BADARGS);
-  }
-  VkImageView *pImageViews =
-      (VkImageView *)malloc(imageCount * sizeof(VkImageView));
-  if (!pImageViews) {
-    LOG_ERROR_ARGS(ERR_LEVEL_FATAL,
-                   "could not create swap chain image views: %s",
-                   strerror(errno));
-    PANIC();
-  }
-
+ErrVal new_SwapchainImageViews(      //
+    VkImageView *pImageViews,        //
+    const VkImage *pSwapchainImages, //
+    const uint32_t imageCount,       //
+    const VkDevice device,           //
+    const VkFormat format            //
+) {
   for (uint32_t i = 0; i < imageCount; i++) {
     ErrVal ret = new_ImageView(&(pImageViews[i]), device, pSwapchainImages[i],
                                format, VK_IMAGE_ASPECT_COLOR_BIT);
     if (ret != ERR_OK) {
       LOG_ERROR(ERR_LEVEL_ERROR, "could not create swap chain image views");
-      delete_SwapchainImageViews(ppImageViews, i, device);
+      delete_SwapchainImageViews(pImageViews, i, device);
       return (ret);
     }
   }
-
-  *ppImageViews = pImageViews;
   return (ERR_OK);
 }
 
-void delete_SwapchainImageViews(VkImageView **ppImageViews, uint32_t imageCount,
-                                const VkDevice device) {
+void delete_SwapchainImageViews( //
+    VkImageView *pImageViews,    //
+    const uint32_t imageCount,   //
+    const VkDevice device        //
+) {
   for (uint32_t i = 0; i < imageCount; i++) {
-    delete_ImageView(&((*ppImageViews)[i]), device);
+    delete_ImageView(&pImageViews[i], device);
   }
-  free(*ppImageViews);
-  *ppImageViews = NULL;
 }
 
 ErrVal new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
@@ -928,28 +919,25 @@ void delete_CommandPool(VkCommandPool *pCommandPool, const VkDevice device) {
   vkDestroyCommandPool(device, *pCommandPool, NULL);
 }
 
-ErrVal new_VertexDisplayCommandBuffers(
-    VkCommandBuffer **ppCommandBuffers, const VkBuffer vertexBuffer,
-    const uint32_t vertexCount, const VkDevice device,
-    const VkRenderPass renderPass,
-    const VkPipelineLayout vertexDisplayPipelineLayout,
-    const VkPipeline vertexDisplayPipeline, const VkCommandPool commandPool,
-    const VkExtent2D swapchainExtent, const uint32_t swapchainFramebufferCount,
-    const VkFramebuffer *pSwapchainFramebuffers, const mat4x4 cameraTransform) {
+ErrVal new_VertexDisplayCommandBuffers(                 //
+    VkCommandBuffer *pCommandBuffers,                   //
+    const uint32_t swapchainFramebufferCount,           //
+    const VkFramebuffer *pSwapchainFramebuffers,        //
+    const VkBuffer vertexBuffer,                        //
+    const uint32_t vertexCount,                         //
+    const VkDevice device,                              //
+    const VkRenderPass renderPass,                      //
+    const VkPipelineLayout vertexDisplayPipelineLayout, //
+    const VkPipeline vertexDisplayPipeline,             //
+    const VkCommandPool commandPool,                    //
+    const VkExtent2D swapchainExtent,                   //
+    const mat4x4 cameraTransform                        //
+) {
   VkCommandBufferAllocateInfo allocInfo = {0};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.commandPool = commandPool;
   allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocInfo.commandBufferCount = swapchainFramebufferCount;
-
-  VkCommandBuffer *pCommandBuffers = (VkCommandBuffer *)malloc(
-      swapchainFramebufferCount * sizeof(VkCommandBuffer));
-  if (!pCommandBuffers) {
-    LOG_ERROR_ARGS(ERR_LEVEL_FATAL,
-                   "Failed to create graphics command buffers: %s",
-                   strerror(errno));
-    PANIC();
-  }
 
   VkResult allocateCommandBuffersRetVal =
       vkAllocateCommandBuffers(device, &allocInfo, pCommandBuffers);
@@ -1015,7 +1003,6 @@ ErrVal new_VertexDisplayCommandBuffers(
     }
   }
 
-  *ppCommandBuffers = pCommandBuffers;
   return (ERR_OK);
 }
 
@@ -1043,41 +1030,26 @@ ErrVal new_Semaphore(VkSemaphore *pSemaphore, const VkDevice device) {
 
 void delete_Semaphore(VkSemaphore *pSemaphore, const VkDevice device) {
   vkDestroySemaphore(device, *pSemaphore, NULL);
-  *pSemaphore = NULL;
+  *pSemaphore = VK_NULL_HANDLE;
 }
 
-ErrVal new_Semaphores(VkSemaphore **ppSemaphores, const uint32_t semaphoreCount,
+ErrVal new_Semaphores(VkSemaphore *pSemaphores, const uint32_t semaphoreCount,
                       const VkDevice device) {
-  if (semaphoreCount == 0) {
-    LOG_ERROR(
-        ERR_LEVEL_WARN,
-        "failed to create semaphores: could not allocate 0 bytes of memory");
-    return (ERR_BADARGS);
-  }
-  *ppSemaphores = (VkSemaphore *)malloc(semaphoreCount * sizeof(VkSemaphore));
-  if (*ppSemaphores == NULL) {
-    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "Failed to create semaphores: %s",
-                   strerror(errno));
-    PANIC();
-  }
-
   for (uint32_t i = 0; i < semaphoreCount; i++) {
-    ErrVal retVal = new_Semaphore(&(*ppSemaphores)[i], device);
+    ErrVal retVal = new_Semaphore(&pSemaphores[i], device);
     if (retVal != ERR_OK) {
-      delete_Semaphores(ppSemaphores, i, device);
+      delete_Semaphores(pSemaphores, i, device);
       return (retVal);
     }
   }
   return (ERR_OK);
 }
 
-void delete_Semaphores(VkSemaphore **ppSemaphores,
+void delete_Semaphores(VkSemaphore *pSemaphores,
                        const uint32_t semaphoreCount, const VkDevice device) {
   for (uint32_t i = 0; i < semaphoreCount; i++) {
-    delete_Semaphore(&((*ppSemaphores)[i]), device);
+    delete_Semaphore(&pSemaphores[i], device);
   }
-  free(*ppSemaphores);
-  *ppSemaphores = NULL;
 }
 
 ErrVal new_Fence(VkFence *pFence, const VkDevice device) {
@@ -1098,37 +1070,24 @@ void delete_Fence(VkFence *pFence, const VkDevice device) {
   *pFence = VK_NULL_HANDLE;
 }
 
-ErrVal new_Fences(VkFence **ppFences, const uint32_t fenceCount,
+ErrVal new_Fences(VkFence *pFences, const uint32_t fenceCount,
                   const VkDevice device) {
-  if (fenceCount == 0) {
-    LOG_ERROR(ERR_LEVEL_WARN, "cannot allocate 0 bytes of memory");
-    return (ERR_UNSAFE);
-  }
-  *ppFences = (VkFence *)malloc(fenceCount * sizeof(VkDevice));
-  if (!*ppFences) {
-    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to create memory fence; %s",
-                   strerror(errno));
-    PANIC();
-  }
-
   for (uint32_t i = 0; i < fenceCount; i++) {
-    ErrVal retVal = new_Fence(&(*ppFences)[i], device);
+    ErrVal retVal = new_Fence(&pFences[i], device);
     if (retVal != ERR_OK) {
       /* Clean up memory */
-      delete_Fences(ppFences, i, device);
+      delete_Fences(pFences, i, device);
       return (retVal);
     }
   }
   return (ERR_OK);
 }
 
-void delete_Fences(VkFence **ppFences, const uint32_t fenceCount,
+void delete_Fences(VkFence *pFences, const uint32_t fenceCount,
                    const VkDevice device) {
   for (uint32_t i = 0; i < fenceCount; i++) {
-    delete_Fence(&(*ppFences)[i], device);
+    delete_Fence(&pFences[i], device);
   }
-  free(*ppFences);
-  *ppFences = NULL;
 }
 
 /* Draws a frame to the surface provided, and sets things up for the next frame
@@ -1239,8 +1198,8 @@ ErrVal new_GlfwWindow(GLFWwindow **ppGlfwWindow, const char *name,
   /* Not resizable */
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  *ppGlfwWindow =
-      glfwCreateWindow((int)dimensions.width, (int)dimensions.height, name, NULL, NULL);
+  *ppGlfwWindow = glfwCreateWindow((int)dimensions.width,
+                                   (int)dimensions.height, name, NULL, NULL);
   if (*ppGlfwWindow == NULL) {
     LOG_ERROR(ERR_LEVEL_ERROR, "failed to create GLFW window");
     return (ERR_UNKNOWN);
@@ -1420,7 +1379,6 @@ ErrVal copyBuffer(VkBuffer destinationBuffer, const VkBuffer sourceBuffer,
   return (ERR_OK);
 }
 
-
 void delete_Buffer(VkBuffer *pBuffer, const VkDevice device) {
   vkDestroyBuffer(device, *pBuffer, NULL);
   *pBuffer = VK_NULL_HANDLE;
@@ -1529,17 +1487,22 @@ ErrVal copyToDeviceMemory(VkDeviceMemory *pDeviceMemory,
   return (ERR_OK);
 }
 
-ErrVal new_Image(VkImage *pImage, VkDeviceMemory *pImageMemory,
-                 const uint32_t width, const uint32_t height,
-                 const VkFormat format, const VkImageTiling tiling,
-                 const VkImageUsageFlags usage,
-                 const VkMemoryPropertyFlags properties,
-                 const VkPhysicalDevice physicalDevice, const VkDevice device) {
+ErrVal new_Image(                           //
+    VkImage *pImage,                        //
+    VkDeviceMemory *pImageMemory,           //
+    const VkExtent2D dimensions,            //
+    const VkFormat format,                  //
+    const VkImageTiling tiling,             //
+    const VkImageUsageFlags usage,          //
+    const VkMemoryPropertyFlags properties, //
+    const VkPhysicalDevice physicalDevice,  //
+    const VkDevice device                   //
+) {
   VkImageCreateInfo imageInfo = {0};
   imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   imageInfo.imageType = VK_IMAGE_TYPE_2D;
-  imageInfo.extent.width = width;
-  imageInfo.extent.height = height;
+  imageInfo.extent.width = dimensions.width;
+  imageInfo.extent.height = dimensions.height;
   imageInfo.extent.depth = 1;
   imageInfo.mipLevels = 1;
   imageInfo.arrayLayers = 1;
@@ -1606,11 +1569,10 @@ ErrVal new_DepthImage(VkImage *pImage, VkDeviceMemory *pImageMemory,
                       const VkDevice device) {
   VkFormat depthFormat = {0};
   getDepthFormat(&depthFormat);
-  ErrVal retVal =
-      new_Image(pImage, pImageMemory, swapchainExtent.width,
-                swapchainExtent.height, depthFormat, VK_IMAGE_TILING_OPTIMAL,
-                VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, physicalDevice, device);
+  ErrVal retVal = new_Image(
+      pImage, pImageMemory, swapchainExtent, depthFormat,
+      VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, physicalDevice, device);
   if (retVal != ERR_OK) {
     LOG_ERROR(ERR_LEVEL_ERROR, "failed to create depth image");
     return (retVal);

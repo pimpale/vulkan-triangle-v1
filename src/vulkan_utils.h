@@ -42,12 +42,15 @@ typedef struct {
 /// Panics if Vulkan is not supported by GLFW
 /// --- CLEANUP ---
 /// To cleanup, call delete_Instance on the created instance
-ErrVal new_Instance(VkInstance *pInstance, const uint32_t enabledLayerCount,
-                    const char *const *ppEnabledLayerNames,
-                    const uint32_t enabledExtensionCount,
-                    const char *const *ppEnabledExtensionNames,
-                    const bool enableGLFWRequiredExtensions,
-                    const bool enableDebugRequiredExtensions);
+ErrVal new_Instance(                            //
+    VkInstance *pInstance,                      //
+    const uint32_t enabledLayerCount,           //
+    const char *const *ppEnabledLayerNames,     //
+    const uint32_t enabledExtensionCount,       //
+    const char *const *ppEnabledExtensionNames, //
+    const bool enableGLFWRequiredExtensions,    //
+    const bool enableDebugRequiredExtensions    //
+);
 
 /// Destroys the instance created in new_Instance
 /// --- PRECONDITIONS ---
@@ -63,8 +66,11 @@ void delete_Instance(VkInstance *pInstance);
 /// --- POSTCONDITONS ---
 /// returns error status
 /// on success, *ppGlfwWindow is a valid GLFW window
-ErrVal new_GlfwWindow(GLFWwindow **ppGlfwWindow, const char *name,
-                      VkExtent2D dimensions);
+ErrVal new_GlfwWindow(         //
+    GLFWwindow **ppGlfwWindow, //
+    const char *name,          //
+    VkExtent2D dimensions      //
+);
 
 /// Gets the size of the framebuffer of the window
 /// --- PRECONDITIONS ---
@@ -85,8 +91,10 @@ ErrVal getWindowExtent(VkExtent2D *pExtent, GLFWwindow *pWindow);
 /// on success, will log all errors to stdout
 /// --- CLEANUP ---
 /// call delete_DebugCallback on the created callback
-ErrVal new_DebugCallback(VkDebugUtilsMessengerEXT *pCallback,
-                         const VkInstance instance);
+ErrVal new_DebugCallback(                //
+    VkDebugUtilsMessengerEXT *pCallback, //
+    const VkInstance instance            //
+);
 
 /// Destroys the debug callback
 /// --- PRECONDITIONS ---
@@ -95,8 +103,10 @@ ErrVal new_DebugCallback(VkDebugUtilsMessengerEXT *pCallback,
 /// --- POSTCONDITONS ---
 /// `*pCallback` is no longer a valid callback
 /// `*pCallback` is set to VK_NULL_HANDLE
-void delete_DebugCallback(VkDebugUtilsMessengerEXT *pCallback,
-                          const VkInstance instance);
+void delete_DebugCallback(               //
+    VkDebugUtilsMessengerEXT *pCallback, //
+    const VkInstance instance            //
+);
 
 /// Gets a the first physical device with both graphics and compute capabilities
 /// --- PRECONDITIONS ---
@@ -120,10 +130,13 @@ ErrVal getPhysicalDevice(VkPhysicalDevice *pDevice, const VkInstance instance);
 /// on success, `*pDevice` will be a new logical device
 /// --- CLEANUP ---
 /// call delete_Device
-ErrVal new_Device(VkDevice *pDevice, const VkPhysicalDevice physicalDevice,
-                  const uint32_t queueFamilyIndex,
-                  const uint32_t enabledExtensionCount,
-                  const char *const *ppEnabledExtensionNames);
+ErrVal new_Device(                             //
+    VkDevice *pDevice,                         //
+    const VkPhysicalDevice physicalDevice,     //
+    const uint32_t queueFamilyIndex,           //
+    const uint32_t enabledExtensionCount,      //
+    const char *const *ppEnabledExtensionNames //
+);
 
 /// Deletes a logical device created from new_Device
 /// --- PRECONDITIONS ---
@@ -141,9 +154,11 @@ void delete_Device(VkDevice *pDevice);
 /// --- POSTCONDITIONS ---
 /// sets `*pQueueFamilyIndex` contains the index of the first queue family
 /// supporting `bit`
-ErrVal getQueueFamilyIndexByCapability(uint32_t *pQueueFamilyIndex,
-                                       const VkPhysicalDevice device,
-                                       const VkQueueFlags bit);
+ErrVal getQueueFamilyIndexByCapability( //
+    uint32_t *pQueueFamilyIndex,        //
+    const VkPhysicalDevice device,      //
+    const VkQueueFlags bit              //
+);
 
 /// Gets the first queue family index which can support rendering to `surface`
 /// --- PRECONDITIONS ---
@@ -155,9 +170,11 @@ ErrVal getQueueFamilyIndexByCapability(uint32_t *pQueueFamilyIndex,
 /// * returns error status.
 /// * on success, sets `*pQueueFamilyIndex` contains the index of the first
 /// queue supporting presenting to `surface`
-ErrVal getPresentQueueFamilyIndex(uint32_t *pQueueFamilyIndex,
-                                  const VkPhysicalDevice physicalDevice,
-                                  const VkSurfaceKHR surface);
+ErrVal getPresentQueueFamilyIndex(         //
+    uint32_t *pQueueFamilyIndex,           //
+    const VkPhysicalDevice physicalDevice, //
+    const VkSurfaceKHR surface             //
+);
 
 /// Gets the queue associated with the queue family
 /// --- PRECONDITIONS ---
@@ -168,10 +185,13 @@ ErrVal getPresentQueueFamilyIndex(uint32_t *pQueueFamilyIndex,
 /// --- POSTCONDITIONS ---
 /// * returns error status
 /// * on success, `pQueue` is set to a new 	queue in the given queue family
-ErrVal getQueue(VkQueue *pQueue, const VkDevice device,
-                const uint32_t queueFamilyIndex);
+ErrVal getQueue(                    //
+    VkQueue *pQueue,                //
+    const VkDevice device,          //
+    const uint32_t queueFamilyIndex //
+);
 
-/// Gets a surface format that can be rendered to 
+/// Gets a surface format that can be rendered to
 /// --- PRECONDITIONS ---
 /// * `pSurfaceFormat` is a valid pointer
 /// * `surface` has been allocated from the same instance as `physicalDevice`
@@ -187,46 +207,68 @@ ErrVal getPreferredSurfaceFormat(VkSurfaceFormatKHR *pSurfaceFormat,
 /// * All vulkan objects come from the same instance
 /// * `oldSwapchain` is a valid pointer
 /// * `pSwapchainImageCount` is a valid pointer
-/// * `oldSwapchain` is either VK_NULL_HANDLE or a swapchain created from new_Swapchain
-/// 
-ErrVal new_Swapchain(VkSwapchainKHR *pSwapchain, uint32_t *pSwapchainImageCount,
-                     const VkSwapchainKHR oldSwapchain,
-                     const VkSurfaceFormatKHR surfaceFormat,
-                     const VkPhysicalDevice physicalDevice,
-                     const VkDevice device, const VkSurfaceKHR surface,
-                     const VkExtent2D extent, const uint32_t graphicsIndex,
-                     const uint32_t presentIndex);
+/// * `oldSwapchain` is either VK_NULL_HANDLE or a swapchain created from
+/// new_Swapchain
+///
+ErrVal new_Swapchain(                       //
+    VkSwapchainKHR *pSwapchain,             //
+    uint32_t *pSwapchainImageCount,         //
+    const VkSwapchainKHR oldSwapchain,      //
+    const VkSurfaceFormatKHR surfaceFormat, //
+    const VkPhysicalDevice physicalDevice,  //
+    const VkDevice device,                  //
+    const VkSurfaceKHR surface,             //
+    const VkExtent2D extent,                //
+    const uint32_t graphicsIndex,           //
+    const uint32_t presentIndex             //
+);
 
 void delete_Swapchain(VkSwapchainKHR *pSwapchain, const VkDevice device);
 
-ErrVal new_SwapchainImages(VkImage **ppSwapchainImages, uint32_t *pImageCount,
-                           const VkDevice device,
-                           const VkSwapchainKHR swapchain);
+ErrVal getSwapchainImages(         //
+    VkImage *pSwapchainImages,     //
+    const uint32_t imageCount,     //
+    const VkDevice device,         //
+    const VkSwapchainKHR swapchain //
+);
 
-ErrVal new_Image(VkImage *pImage, VkDeviceMemory *pImageMemory,
-                 const uint32_t width, const uint32_t height,
-                 const VkFormat format, const VkImageTiling tiling,
-                 const VkImageUsageFlags usage,
-                 const VkMemoryPropertyFlags properties,
-                 const VkPhysicalDevice physicalDevice, const VkDevice device);
+ErrVal new_Image(                           //
+    VkImage *pImage,                        //
+    VkDeviceMemory *pImageMemory,           //
+    const VkExtent2D dimensions,            //
+    const VkFormat format,                  //
+    const VkImageTiling tiling,             //
+    const VkImageUsageFlags usage,          //
+    const VkMemoryPropertyFlags properties, //
+    const VkPhysicalDevice physicalDevice,  //
+    const VkDevice device                   //
+);
 
 void delete_Image(VkImage *pImage, const VkDevice device);
 
-void delete_SwapchainImages(VkImage **ppImages);
-
-ErrVal new_ImageView(VkImageView *pImageView, const VkDevice device,
-                     const VkImage image, const VkFormat format,
-                     const uint32_t aspectMask);
-
-ErrVal new_SwapchainImageViews(VkImageView **ppImageViews,
-                               const VkDevice device, const VkFormat format,
-                               const uint32_t imageCount,
-                               const VkImage *pSwapchainImages);
+ErrVal new_ImageView(         //
+    VkImageView *pImageView,  //
+    const VkDevice device,    //
+    const VkImage image,      //
+    const VkFormat format,    //
+    const uint32_t aspectMask //
+);
 
 void delete_ImageView(VkImageView *pImageView, VkDevice device);
 
-void delete_SwapchainImageViews(VkImageView **ppImageViews, uint32_t imageCount,
-                                const VkDevice device);
+ErrVal new_SwapchainImageViews(      //
+    VkImageView *pImageViews,        //
+    const VkImage *pSwapchainImages, //
+    const uint32_t imageCount,       //
+    const VkDevice device,           //
+    const VkFormat format            //
+);
+
+void delete_SwapchainImageViews( //
+    VkImageView *pImageViews,    //
+    const uint32_t imageCount,   //
+    const VkDevice device        //
+);
 
 ErrVal new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
                         const uint32_t codeSize, const uint32_t *pCode);
@@ -283,14 +325,20 @@ ErrVal new_CommandPool(VkCommandPool *pCommandPool, const VkDevice device,
 
 void delete_CommandPool(VkCommandPool *pCommandPool, const VkDevice device);
 
-ErrVal new_VertexDisplayCommandBuffers(
-    VkCommandBuffer **ppCommandBuffers, const VkBuffer vertexBuffer,
-    const uint32_t vertexCount, const VkDevice device,
-    const VkRenderPass renderPass,
-    const VkPipelineLayout vertexDisplayPipelineLayout,
-    const VkPipeline vertexDisplayPipeline, const VkCommandPool commandPool,
-    const VkExtent2D swapchainExtent, const uint32_t swapchainFramebufferCount,
-    const VkFramebuffer *pSwapchainFramebuffers, const mat4x4 cameraTransform);
+ErrVal new_VertexDisplayCommandBuffers(                 //
+    VkCommandBuffer *pCommandBuffers,                   //
+    const uint32_t swapchainFramebufferCount,           //
+    const VkFramebuffer *pSwapchainFramebuffers,        //
+    const VkBuffer vertexBuffer,                        //
+    const uint32_t vertexCount,                         //
+    const VkDevice device,                              //
+    const VkRenderPass renderPass,                      //
+    const VkPipelineLayout vertexDisplayPipelineLayout, //
+    const VkPipeline vertexDisplayPipeline,             //
+    const VkCommandPool commandPool,                    //
+    const VkExtent2D swapchainExtent,                   //
+    const mat4x4 cameraTransform                        //
+);
 
 void delete_CommandBuffers(VkCommandBuffer **ppCommandBuffers,
                            const uint32_t commandBufferCount,
@@ -301,20 +349,20 @@ ErrVal new_Semaphore(VkSemaphore *pSemaphore, const VkDevice device);
 
 void delete_Semaphore(VkSemaphore *pSemaphore, const VkDevice device);
 
-ErrVal new_Semaphores(VkSemaphore **ppSemaphores, const uint32_t semaphoreCount,
+ErrVal new_Semaphores(VkSemaphore *pSemaphores, const uint32_t semaphoreCount,
                       const VkDevice device);
 
-void delete_Semaphores(VkSemaphore **ppSemaphores,
-                       const uint32_t semaphoreCount, const VkDevice device);
+void delete_Semaphores(VkSemaphore *pSemaphores, const uint32_t semaphoreCount,
+                       const VkDevice device);
 
 ErrVal new_Fence(VkFence *pFence, const VkDevice device);
 
 void delete_Fence(VkFence *pFence, const VkDevice device);
 
-ErrVal new_Fences(VkFence **ppFences, const uint32_t fenceCount,
+ErrVal new_Fences(VkFence *pFences, const uint32_t fenceCount,
                   const VkDevice device);
 
-void delete_Fences(VkFence **ppFences, const uint32_t fenceCount,
+void delete_Fences(VkFence *pFences, const uint32_t fenceCount,
                    const VkDevice device);
 
 ErrVal drawFrame(uint32_t *pCurrentFrame, const uint32_t maxFramesInFlight,
@@ -335,7 +383,6 @@ ErrVal new_VertexBuffer(VkBuffer *pBuffer, VkDeviceMemory *pBufferMemory,
                         const VkDevice device,
                         const VkPhysicalDevice physicalDevice,
                         const VkCommandPool commandPool, const VkQueue queue);
-
 
 ErrVal new_Buffer_DeviceMemory(VkBuffer *pBuffer, VkDeviceMemory *pBufferMemory,
                                const VkDeviceSize size,
