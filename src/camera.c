@@ -82,7 +82,7 @@ void updateCamera(Camera *camera, GLFWwindow *pWindow) {
       vec3_add(camera->pos, camera->pos, delta_pos);
   }
 
-  float rotscale = 0.05f;
+  float rotscale = 0.02f;
 
   if (glfwGetKey(pWindow, GLFW_KEY_UP) == GLFW_PRESS) {
     camera->pitch += rotscale;
@@ -91,15 +91,18 @@ void updateCamera(Camera *camera, GLFWwindow *pWindow) {
     camera-> pitch -= rotscale;
   }
   if (glfwGetKey(pWindow, GLFW_KEY_LEFT) == GLFW_PRESS) {
-    camera->yaw += rotscale;
+    camera->yaw -= rotscale;
   }
   if (glfwGetKey(pWindow, GLFW_KEY_RIGHT) == GLFW_PRESS) {
-      camera->yaw -= rotscale;
+      camera->yaw += rotscale;
   }
 
   // clamp camera->pitch between 89 degrees
   camera->pitch = fminf(camera->pitch, RADIANS(89.0f));
   camera->pitch = fmaxf(camera->pitch, RADIANS(-89.0f));
+
+  // rebuild basis vectors
+  camera->basis = new_CameraBasis(camera->pitch, camera->yaw);
 }
 
 void getMvpCamera(mat4x4 mvp, const Camera *camera) {

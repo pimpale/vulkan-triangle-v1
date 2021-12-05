@@ -1,6 +1,6 @@
 #include <errno.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -8,17 +8,17 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "constants.h"
 #include "camera.h"
+#include "constants.h"
 #include "errors.h"
 #include "utils.h"
 #include "vulkan_utils.h"
 
 static uint32_t vertex_count = 3;
 static Vertex vertex_data[] = {
-    (Vertex){.position={1.0, 0.0, 0.0}, .color={1.0, 0.0, 0.0}},
-    (Vertex){.position={0.0, 1.0, 0.0}, .color={0.0, 1.0, 0.0}},
-    (Vertex){.position={0.0, 0.0, 1.0}, .color={0.0, 0.0, 1.0}},
+    (Vertex){.position = {1.0, 0.0, 0.0}, .color = {1.0, 0.0, 0.0}},
+    (Vertex){.position = {0.0, 1.0, 0.0}, .color = {0.0, 1.0, 0.0}},
+    (Vertex){.position = {0.0, 0.0, 1.0}, .color = {0.0, 0.0, 1.0}},
 };
 
 int main(void) {
@@ -112,7 +112,6 @@ int main(void) {
 
   /* Create depth buffer */
   VkDeviceMemory depthImageMemory;
-
   VkImage depthImage;
   new_DepthImage(&depthImage, &depthImageMemory, swapchainExtent,
                  physicalDevice, device);
@@ -165,12 +164,11 @@ int main(void) {
   new_Semaphores(&pRenderFinishedSemaphores, swapchainImageCount, device);
   new_Fences(&pInFlightFences, swapchainImageCount, device);
 
-
-
   VkBuffer vertexBuffer;
   VkDeviceMemory vertexBufferMemory;
-  new_VertexBuffer(&vertexBuffer, &vertexBufferMemory, vertex_data, vertex_count,
-                   device, physicalDevice, commandPool, graphicsQueue);
+  new_VertexBuffer(&vertexBuffer, &vertexBufferMemory, vertex_data,
+                   vertex_count, device, physicalDevice, commandPool,
+                   graphicsQueue);
 
   // create camera
   vec3 loc = {0.0f, 0.0f, 0.0f};
@@ -186,21 +184,20 @@ int main(void) {
     mat4x4 mvp;
     getMvpCamera(mvp, &camera);
 
-
     VkCommandBuffer *pVertexDisplayCommandBuffers;
 
     new_VertexDisplayCommandBuffers(
-        &pVertexDisplayCommandBuffers, vertexBuffer, vertex_count,
-        device, renderPass, graphicsPipelineLayout,
-        graphicsPipeline, commandPool, swapchainExtent,
-        swapchainImageCount, pSwapchainFramebuffers, mvp);
+        &pVertexDisplayCommandBuffers, vertexBuffer, vertex_count, device,
+        renderPass, graphicsPipelineLayout, graphicsPipeline, commandPool,
+        swapchainExtent, swapchainImageCount, pSwapchainFramebuffers, mvp);
 
     uint32_t result = drawFrame(
         &currentFrame, 2, device, swapchain, pVertexDisplayCommandBuffers,
         pInFlightFences, pImageAvailableSemaphores, pRenderFinishedSemaphores,
         graphicsQueue, presentQueue);
 
-    // delete_CommandBuffers(&pVertexDisplayCommandBuffers,swapchainImageCount, commandPool, device);
+    // delete_CommandBuffers(&pVertexDisplayCommandBuffers,swapchainImageCount,
+    // commandPool, device);
 
     if (result == ERR_OUTOFDATE) {
       vkDeviceWaitIdle(device);
@@ -220,11 +217,17 @@ int main(void) {
       delete_SwapchainImages(&pSwapchainImages);
       delete_Swapchain(&swapchain, device);
 
-      /* Set swapchain to new window size */
-      getWindowExtent(&swapchainExtent, pWindow);
+      // delete depth buffer
+      delete_ImageView(&depthImageView, device);
+      delete_Image(&depthImage, device);
+      delete_DeviceMemory(&depthImageMemory, device);
 
-      /*Create swap chain */
-      new_Swapchain(&swapchain, &swapchainImageCount, VK_NULL_HANDLE,
+      // get new window size
+      getWindowExtent(&swapchainExtent, pWindow);
+      resizeCamera(&camera, swapchainExtent);
+
+      /* recreate swap chain */
+      new_Swapchain(&swapchain, &swapchainImageCount, swapchain,
                     surfaceFormat, physicalDevice, device, surface,
                     swapchainExtent, graphicsIndex, presentIndex);
       new_SwapchainImages(&pSwapchainImages, &swapchainImageCount, device,
@@ -232,6 +235,11 @@ int main(void) {
       new_SwapchainImageViews(&pSwapchainImageViews, device,
                               surfaceFormat.format, swapchainImageCount,
                               pSwapchainImages);
+
+      // Create depth image
+      new_DepthImage(&depthImage, &depthImageMemory, swapchainExtent,
+                     physicalDevice, device);
+      new_DepthImageView(&depthImageView, device, depthImage);
 
       /* Create graphics pipeline */
       new_VertexDisplayRenderPass(&renderPass, device, surfaceFormat.format);
@@ -268,6 +276,9 @@ int main(void) {
                              device);
   delete_SwapchainImages(&pSwapchainImages);
   delete_Swapchain(&swapchain, device);
+  delete_ImageView(&depthImageView, device);
+  delete_Image(&depthImage, device);
+  delete_DeviceMemory(&depthImageMemory, device);
   delete_Device(&device);
   delete_Surface(&surface, instance);
   delete_DebugCallback(&callback, instance);
