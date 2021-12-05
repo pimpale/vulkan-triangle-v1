@@ -6,7 +6,7 @@ SRC_DIRS ?= src
 SRCS := $(shell find $(SRC_DIRS) -type f -name *.c)
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 
-INC_DIRS := 
+INC_DIRS := vendor
 INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 LDFLAGS := -lm -lvulkan -lglfw

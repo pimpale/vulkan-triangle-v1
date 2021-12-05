@@ -5,79 +5,69 @@
  *      Author: gpi
  */
 
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
+
+#include <vulkan/vulkan.h>
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
+
 
 #include "constants.h"
 #include "errors.h"
+
 #include "utils.h"
 
-static long getLength(FILE* f) {
-	// get current position in file
-	long currentpos = ftell(f);
 
-	// go to end and find length
-	fseek(f, 0, SEEK_END);
-	long  size = ftell(f);
-
-	// restore current position
-	fseek(f, currentpos, SEEK_SET);
-
-	// return size
-	return (size);
+uint64_t getLength(FILE *f) {
+  /* TODO what if the file is modified as we read it? */
+  int64_t currentpos = ftell(f);
+  fseek(f, 0, SEEK_END);
+  int64_t size = ftell(f);
+  fseek(f, currentpos, SEEK_SET);
+  if (size < 0) {
+    LOG_ERROR(ERR_LEVEL_ERROR, "invalid file size");
+    return (0);
+  }
+  return ((uint64_t)size);
 }
 
 /**
  * Mallocs
  */
-void readShaderFile(const char* filename, uint32_t* length, uint32_t** code) {
-	FILE* fp = fopen(filename, "rb");
-	if (!fp) {
-		errLog(FATAL, "could not read file\n");
-		panic();
-	}
+void readShaderFile(const char *filename, uint32_t *length, uint32_t **code) {
+  FILE *fp = fopen(filename, "rb");
+  if (!fp) {
+    LOG_ERROR(ERR_LEVEL_FATAL, "could not read file");
+    PANIC();
+  }
+  /* We can coerce to a 32 bit, because no realistic files will be
+   * greater than 2 GB */
+  uint32_t filesize = (uint32_t)getLength(fp);
+  // pad to a multiple of 4
+  uint32_t filesizepadded = (filesize + 3) & ~0x03u;
 
-	long rawfilesize = getLength(fp);
-
-  if(rawfilesize < 0 || rawfilesize > UINT32_MAX) {
-      errLog(FATAL, "File size is invalid.");
-      fclose(fp);
-      panic();
+  char *str = malloc(filesizepadded);
+  if (!str) {
+    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "could not read shader file: %s",
+                   strerror(errno));
+    fclose(fp);
+    PANIC();
   }
 
-  uint32_t filesize = (uint32_t)rawfilesize;
+  fread(str, filesize, sizeof(char), fp);
+  fclose(fp);
 
-  // align the filesize to a multiple of 4
-	uint32_t filesizepadded = (filesize + 3) & ~0x3u;
+  /*pad data*/
+  for (uint32_t i = filesize; i < filesizepadded; i++) {
+    str[i] = 0;
+  }
 
-	uint32_t *data = malloc(filesizepadded);
-	if (!data) {
-		errLog(FATAL, "Could not allocate space for shader file: %s\n", strerror(errno));
-		fclose(fp);
-		panic();
-	}
-
-	size_t bytes_read = fread(data, filesize, 1, fp);
-
-  // handle if we were unable to read the shader file
-	if(bytes_read < filesize) {
-		errLog(FATAL, "Could not read shader file: %s\n", strerror(errno));
-		fclose(fp);
-		panic();
-	}
-
-	fclose(fp);
-
-	// pad the rest of the bytes
-	for (uint32_t i = filesize; i < filesizepadded; i++) {
-		data[i] = 0;
-	}
-
-	// return data
-	*length = filesizepadded;
-	*code = data;
-	return;
+  /*cast data t array of uints*/
+  *length = filesizepadded;
+  *code = (uint32_t *)((void *)str);
+  return;
 }

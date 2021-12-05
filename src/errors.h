@@ -1,41 +1,52 @@
 /*
+ * Copyright 2019 Govind Pimpale
  * error_handle.h
  *
  *  Created on: Aug 7, 2018
  *      Author: gpi
  */
 
-#ifndef ERRORS_H_
-#define ERRORS_H_
+#ifndef SRC_ERRORS_H_
+#define SRC_ERRORS_H_
 
-#include <stdint.h>
+#include <vulkan/vulkan.h>
 
-#define DEBUG 1u
-#define INFO 2u
-#define WARN 3u
-#define ERROR 4u
-#define FATAL 5u
-#define UNKNOWN 6u
+#include "constants.h"
 
-#define DEBUG_MSG "debug"
-#define INFO_MSG "info"
-#define WARN_MSG "warning"
-#define ERROR_MSG "error"
-#define FATAL_MSG "fatal"
-#define UNKNOWN_MSG "unknown severity"
+typedef enum ErrSeverity {
+  ERR_LEVEL_DEBUG = 1,
+  ERR_LEVEL_INFO = 2,
+  ERR_LEVEL_WARN = 3,
+  ERR_LEVEL_ERROR = 4,
+  ERR_LEVEL_FATAL = 5,
+  ERR_LEVEL_UNKNOWN = 6,
+} ErrSeverity;
 
-#define UNUSED(x) (void)(x)
+typedef enum ErrVal {
+  ERR_OK = 0,
+  ERR_UNKNOWN = 1,
+  ERR_NOTSUPPORTED = 2,
+  ERR_UNSAFE = 3,
+  ERR_BADARGS = 4,
+  ERR_OUTOFDATE = 5,
+  ERR_ALLOCFAIL = 6,
+  ERR_MEMORY = 7,
+} ErrVal;
 
-#define ERR_NONE 0
-#define ERR_NOTSUPPORTED 1
-#define ERR_UNSAFE 2
-#define ERR_BADARGS 3
-#define ERR_UNKNOWN 4
-#define ERR_OUTOFDATE 5
+char *vkstrerror(VkResult err);
+char *levelstrerror(ErrSeverity level);
 
-void errLog(uint32_t level, const char* message, ...);
+#define UNUSED __attribute__((unused))
+#define PANIC() exit(EXIT_FAILURE)
 
+#define LOG_ERROR(level, msg)                                                  \
+  printf("%s: %s: %s\n", APPNAME, levelstrerror(level), msg)
 
-void panic(void) __attribute__((noreturn));
-
-#endif /* ERRORS_H_ */
+#define LOG_ERROR_ARGS(level, fmt, ...)                                        \
+  do {                                                                         \
+    char macro_message_formatted[MAX_PRINT_LENGTH];                            \
+    snprintf(macro_message_formatted, MAX_PRINT_LENGTH, fmt, __VA_ARGS__);     \
+    printf("%s: %s: %s\n", APPNAME, levelstrerror(level),                      \
+           macro_message_formatted);                                           \
+  } while (0)
+#endif /* SRC_ERRORS_H_ */
