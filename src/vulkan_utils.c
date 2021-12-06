@@ -8,10 +8,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include "constants.h"
-#include "errors.h"
-#include "utils.h"
-
 static VKAPI_ATTR VkBool32 VKAPI_CALL
 debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
               UNUSED VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -44,12 +40,16 @@ debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 }
 
 /* Creates new VkInstance with sensible defaults */
-ErrVal new_Instance(VkInstance *pInstance, const uint32_t enabledLayerCount,
-                    const char *const *ppEnabledLayerNames,
-                    const uint32_t enabledExtensionCount,
-                    const char *const *ppEnabledExtensionNames,
-                    const bool enableGLFWRequiredExtensions,
-                    const bool enableDebugRequiredExtensions) {
+ErrVal new_Instance(                            //
+    VkInstance *pInstance,                      //
+    const uint32_t enabledLayerCount,           //
+    const char *const *ppEnabledLayerNames,     //
+    const uint32_t enabledExtensionCount,       //
+    const char *const *ppEnabledExtensionNames, //
+    const bool enableGLFWRequiredExtensions,    //
+    const bool enableDebugRequiredExtensions,   //
+    const char *appname                         //
+) {
   // first create a new malloced list of all extensions we need
 
   // this variable represents the total number of extensions (including debug
@@ -110,11 +110,11 @@ ErrVal new_Instance(VkInstance *pInstance, const uint32_t enabledLayerCount,
   /* Create app info */
   VkApplicationInfo appInfo = {0};
   appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  appInfo.pApplicationName = APPNAME;
+  appInfo.pApplicationName = appname;
   appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.pEngineName = "None";
+  appInfo.pEngineName = "vulkan_utils.c";
   appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.apiVersion = VK_API_VERSION_1_0;
+  appInfo.apiVersion = VK_API_VERSION_1_2;
 
   /* Create info */
   VkInstanceCreateInfo createInfo = {0};
@@ -1045,8 +1045,8 @@ ErrVal new_Semaphores(VkSemaphore *pSemaphores, const uint32_t semaphoreCount,
   return (ERR_OK);
 }
 
-void delete_Semaphores(VkSemaphore *pSemaphores,
-                       const uint32_t semaphoreCount, const VkDevice device) {
+void delete_Semaphores(VkSemaphore *pSemaphores, const uint32_t semaphoreCount,
+                       const VkDevice device) {
   for (uint32_t i = 0; i < semaphoreCount; i++) {
     delete_Semaphore(&pSemaphores[i], device);
   }

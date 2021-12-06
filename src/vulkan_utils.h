@@ -29,13 +29,15 @@ typedef struct {
 
 /// Creates a new VkInstance with the specified extensions and layers
 /// --- PRECONDITIONS ---
-/// `ppEnabledExtensionNames` must be a pointer to at least
-/// `enabledExtensionCount` extensions `ppEnabledLayerNames` must be a pointer
+/// * `ppEnabledExtensionNames` must be a pointer to at least
+/// * `enabledExtensionCount` extensions `ppEnabledLayerNames` must be a pointer
 /// to at least `enabledLayerCount` layers
+/// * `appname` is a UTF8 null terminated string
 /// --- POSTCONDITONS ---
-/// Returns the status of creating the vulkan instance
-/// If enableGLFWRequiredExtensions, then all extensions needed by GLFW will be
-/// enabled If enableDebugRequiredExtensions, then the extensions needed for
+/// * Returns the error status
+/// * If enableGLFWRequiredExtensions, then all extensions needed by GLFW will
+/// be enabled
+/// * If enableDebugRequiredExtensions, then the extensions needed for
 /// new_DebugCallback will be enabled
 /// --- PANICS ---
 /// Panics if memory allocation fails
@@ -49,7 +51,8 @@ ErrVal new_Instance(                            //
     const uint32_t enabledExtensionCount,       //
     const char *const *ppEnabledExtensionNames, //
     const bool enableGLFWRequiredExtensions,    //
-    const bool enableDebugRequiredExtensions    //
+    const bool enableDebugRequiredExtensions,   //
+    const char *appname                         //
 );
 
 /// Destroys the instance created in new_Instance

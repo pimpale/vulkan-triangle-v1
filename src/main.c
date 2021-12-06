@@ -8,17 +8,27 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#define APPNAME "Vulkan Triangle"
+
 #include "camera.h"
-#include "constants.h"
-#include "errors.h"
 #include "utils.h"
 #include "vulkan_utils.h"
 
-static uint32_t vertex_count = 3;
+
+#include "errors.h"
+
+
+#define WINDOW_HEIGHT 500
+#define WINDOW_WIDTH 500
+
+static uint32_t vertex_count = 6;
 static Vertex vertex_data[] = {
     (Vertex){.position = {1.0, 0.0, 0.0}, .color = {1.0, 0.0, 0.0}},
     (Vertex){.position = {0.0, 1.0, 0.0}, .color = {0.0, 1.0, 0.0}},
     (Vertex){.position = {0.0, 0.0, 1.0}, .color = {0.0, 0.0, 1.0}},
+    (Vertex){.position = {1.0, 0.0, 1.0}, .color = {1.0, 0.0, 0.0}},
+    (Vertex){.position = {0.0, 1.0, 0.0}, .color = {0.0, 1.0, 0.0}},
+    (Vertex){.position = {1.0, 0.0, 1.0}, .color = {0.0, 0.0, 1.0}},
 };
 
 int main(void) {
@@ -30,7 +40,7 @@ int main(void) {
   /* Create instance */
   VkInstance instance;
   new_Instance(&instance, validationLayerCount, ppValidationLayerNames, 0, NULL,
-               true, true);
+               true, true, APPNAME);
 
   /* Enable vulkan logging to stdout */
   VkDebugUtilsMessengerEXT callback;

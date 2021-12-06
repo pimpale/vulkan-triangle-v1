@@ -15,8 +15,6 @@
 
 #include <vulkan/vulkan.h>
 
-#include "constants.h"
-
 #include "errors.h"
 
 char *vkstrerror(VkResult err) {

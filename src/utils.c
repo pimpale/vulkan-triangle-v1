@@ -15,12 +15,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-
-#include "constants.h"
-#include "errors.h"
-
 #include "utils.h"
-
 
 uint64_t getLength(FILE *f) {
   /* TODO what if the file is modified as we read it? */
