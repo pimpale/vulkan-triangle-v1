@@ -9,6 +9,7 @@
 #ifndef SRC_ERRORS_H_
 #define SRC_ERRORS_H_
 
+#include <stdio.h>
 #include <vulkan/vulkan.h>
 
 #ifndef ERROR_MAX_PRINT_LENGTH
@@ -39,8 +40,8 @@ typedef enum ErrVal {
   ERR_MEMORY = 7,
 } ErrVal;
 
-char *vkstrerror(VkResult err);
-char *levelstrerror(ErrSeverity level);
+const char *vkstrerror(VkResult err);
+const char *levelstrerror(ErrSeverity level);
 
 #define UNUSED __attribute__((unused))
 #define PANIC() exit(EXIT_FAILURE)

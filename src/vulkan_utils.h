@@ -20,7 +20,6 @@
 #include <GLFW/glfw3.h>
 
 #include "errors.h"
-#include "utils.h"
 
 typedef struct {
   vec3 position;
@@ -77,23 +76,23 @@ ErrVal new_GlfwWindow(         //
 
 /// Gets the size of the framebuffer of the window
 /// --- PRECONDITIONS ---
-/// `pExtent` is a valid pointer
-/// `pWindow` is a valid pointer to a GLFWwindow
+/// * `pExtent` is a valid pointer
+/// * `pWindow` is a valid pointer to a GLFWwindow
 /// --- POSTCONDITONS ---
-/// returns error status
-/// on success, pExtent is set to the size of the framebuffer of pWindow
-ErrVal getWindowExtent(VkExtent2D *pExtent, GLFWwindow *pWindow);
+/// * returns error status
+/// * on success, pExtent is set to the size of the framebuffer of pWindow
+ErrVal getExtentWindow(VkExtent2D *pExtent, GLFWwindow *pWindow);
 
 /// Sets a debug callback to log error messages from validation layers
 /// --- PRECONDITIONS ---
-/// `instance` must have been created with enableDebugRequiredExtensions true
-/// `pCallback` must be a valid pointer
+/// * `instance` must have been created with enableDebugRequiredExtensions true
+/// * `pCallback` must be a valid pointer
 /// --- POSTCONDITONS ---
-/// returns error status
-/// on success, `*pCallback` is set to a valid callback
-/// on success, will log all errors to stdout
+/// * returns error status
+/// * on success, `*pCallback` is set to a valid callback
+/// * on success, will log all errors to stdout
 /// --- CLEANUP ---
-/// call delete_DebugCallback on the created callback
+/// * call delete_DebugCallback on the created callback
 ErrVal new_DebugCallback(                //
     VkDebugUtilsMessengerEXT *pCallback, //
     const VkInstance instance            //
@@ -116,18 +115,18 @@ void delete_DebugCallback(               //
 /// `pDevice` must be a valid pointer
 /// `instance` must be a valid instance
 /// --- POSTCONDITONS ---
-/// returns error status
-/// on success, sets `*pDevice` to a valid physical device supporting graphics
+/// * returns error status
+/// * on success, sets `*pDevice` to a valid physical device supporting graphics
 /// and compute
 ErrVal getPhysicalDevice(VkPhysicalDevice *pDevice, const VkInstance instance);
 
 /// Creates a new logical device with the given physical device
 /// --- PRECONDITIONS ---
-/// `pDevice` must be a valid pointer
-/// `physicalDevice` must be a valid physical device created from
-/// `getPhysicalDevice` `queueFamilyIndex` must be the index of the queue family
-/// to use `ppEnabledExtensionNames` must be a pointer to at least
-/// `enabledExtensionCount` extensions
+/// * `pDevice` must be a valid pointer
+/// * `physicalDevice` must be a valid physical device created from
+/// * `getPhysicalDevice` `queueFamilyIndex` must be the index of the queue
+/// family to use `ppEnabledExtensionNames` must be a pointer to at least
+/// * `enabledExtensionCount` extensions
 /// --- POSTCONDITIONS ---
 /// returns error status
 /// on success, `*pDevice` will be a new logical device
@@ -143,11 +142,11 @@ ErrVal new_Device(                             //
 
 /// Deletes a logical device created from new_Device
 /// --- PRECONDITIONS ---
-/// `pDevice` must be a valid pointer to a logical device created from
+/// * `pDevice` must be a valid pointer to a logical device created from
 /// new_Device
 /// --- POSTCONDITIONS ---
-/// `*pDevice` is no longer a valid logical device
-/// `*pDevice` is set to VK_NULL_HANDLE
+/// * `*pDevice` is no longer a valid logical device
+/// * `*pDevice` is set to VK_NULL_HANDLE
 void delete_Device(VkDevice *pDevice);
 
 /// Gets the first queue family index with the stated capabilities
@@ -212,7 +211,20 @@ ErrVal getPreferredSurfaceFormat(VkSurfaceFormatKHR *pSurfaceFormat,
 /// * `pSwapchainImageCount` is a valid pointer
 /// * `oldSwapchain` is either VK_NULL_HANDLE or a swapchain created from
 /// new_Swapchain
-///
+/// * `surfaceFormat` is from getPreferredSurfaceFormat called with
+/// `physicalDevice` and `surface`
+/// * `surface` has been allocated from `physicalDevice`
+/// * `device` has been allocated from `physicalDevice`
+/// * `extent` is the current extent of `surface`
+/// * `graphicsIndex` is the queue family index for graphics operations
+/// * `presentIndex` is the queue family index to submit present operations
+/// --- POSTCONDITIONS ---
+/// * returns error status
+/// * on success, `*pSwapchain` is set to a new swapchain
+/// * on success, `*pSwapchainImageCount` is set to the number of images in the
+/// swapchain
+/// --- CLEANUP ---
+/// * call `delete_Swapchain` to free resources associated with this swapchain
 ErrVal new_Swapchain(                       //
     VkSwapchainKHR *pSwapchain,             //
     uint32_t *pSwapchainImageCount,         //
@@ -226,8 +238,20 @@ ErrVal new_Swapchain(                       //
     const uint32_t presentIndex             //
 );
 
+/// Deletes a swapchain created from new_Swapchain
+/// --- PRECONDITIONS ---
+/// * `pSwapchain` must be a valid pointer to a swapchain created from
+/// new_Swapchain
+/// * `device` must be the logical device from which `*pSwapchain` was allocated
+/// --- POSTCONDITIONS ---
+/// * Resources associated with `*pSwapchain` have been released
+/// * `*pSwapchain` is no longer a valid swapchain
+/// * `*pSwapchain` is set to VK_NULL_HANDLE
 void delete_Swapchain(VkSwapchainKHR *pSwapchain, const VkDevice device);
 
+/// gets swapchain images from the swapchain
+/// --- PRECONDITIONS --
+/// * swapchain
 ErrVal getSwapchainImages(         //
     VkImage *pSwapchainImages,     //
     const uint32_t imageCount,     //
@@ -247,6 +271,14 @@ ErrVal new_Image(                           //
     const VkDevice device                   //
 );
 
+/// Deletes a image created from new_Image
+/// --- PRECONDITIONS ---
+/// * `pImage` must be a valid pointer to a image created from new_Image
+/// * `device` must be the logical device from which `*pImage` was allocated
+/// --- POSTCONDITIONS ---
+/// * Resources associated with `*pImage` have been released
+/// * `*pImage` is no longer a valid image
+/// * `*pImage` is set to VK_NULL_HANDLE
 void delete_Image(VkImage *pImage, const VkDevice device);
 
 ErrVal new_ImageView(         //
@@ -257,6 +289,15 @@ ErrVal new_ImageView(         //
     const uint32_t aspectMask //
 );
 
+/// Deletes a imageView created from new_ImageView
+/// --- PRECONDITIONS ---
+/// * `pImageView` must be a valid pointer to a imageView created from
+/// new_ImageView
+/// * `device` must be the logical device from which `*pImageView` was allocated
+/// --- POSTCONDITIONS ---
+/// * Resources associated with `*pImageView` have been released
+/// * `*pImageView` is no longer a valid imageView
+/// * `*pImageView` is set to VK_NULL_HANDLE
 void delete_ImageView(VkImageView *pImageView, VkDevice device);
 
 ErrVal new_SwapchainImageViews(      //
@@ -276,9 +317,16 @@ void delete_SwapchainImageViews( //
 ErrVal new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
                         const uint32_t codeSize, const uint32_t *pCode);
 
-ErrVal new_ShaderModuleFromFile(VkShaderModule *pShaderModule,
-                                const VkDevice device, char *filename);
-
+/// Deletes a shaderModule created from new_ShaderModule
+/// --- PRECONDITIONS ---
+/// * `pShaderModule` must be a valid pointer to a shaderModule created from
+/// new_ShaderModule
+/// * `device` must be the logical device from which `*pShaderModule` was
+/// allocated
+/// --- POSTCONDITIONS ---
+/// * Resources associated with `*pShaderModule` have been released
+/// * `*pShaderModule` is no longer a valid shaderModule
+/// * `*pShaderModule` is set to VK_NULL_HANDLE
 void delete_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device);
 
 ErrVal new_VertexDisplayRenderPass(VkRenderPass *pRenderPass,

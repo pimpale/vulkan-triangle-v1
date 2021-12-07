@@ -77,7 +77,7 @@ int main(void) {
 
   /* Set extent (for now just window width and height) */
   VkExtent2D swapchainExtent;
-  getWindowExtent(&swapchainExtent, pWindow);
+  getExtentWindow(&swapchainExtent, pWindow);
 
   /* we want to use swapchains to reduce tearing */
   const uint32_t deviceExtensionCount = 1;
@@ -243,7 +243,7 @@ int main(void) {
       delete_DeviceMemory(&depthImageMemory, device);
 
       // get new window size
-      getWindowExtent(&swapchainExtent, pWindow);
+      getExtentWindow(&swapchainExtent, pWindow);
       resizeCamera(&camera, swapchainExtent);
 
       /* recreate swap chain */

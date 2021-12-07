@@ -564,21 +564,6 @@ ErrVal new_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device,
   return (ERR_OK);
 }
 
-ErrVal new_ShaderModuleFromFile(VkShaderModule *pShaderModule,
-                                const VkDevice device, char *filename) {
-  uint32_t *shaderFileContents;
-  uint32_t shaderFileLength;
-  readShaderFile(filename, &shaderFileLength, &shaderFileContents);
-  ErrVal retVal = new_ShaderModule(pShaderModule, device, shaderFileLength,
-                                   shaderFileContents);
-  if (retVal != ERR_OK) {
-    LOG_ERROR_ARGS(ERR_LEVEL_ERROR,
-                   "failed to create shader module from file %s", filename);
-  }
-  free(shaderFileContents);
-  return (retVal);
-}
-
 void delete_ShaderModule(VkShaderModule *pShaderModule, const VkDevice device) {
   vkDestroyShaderModule(device, *pShaderModule, NULL);
   *pShaderModule = VK_NULL_HANDLE;
@@ -1183,7 +1168,7 @@ void delete_Surface(VkSurfaceKHR *pSurface, const VkInstance instance) {
 }
 
 /* Gets the extent of the given GLFW window */
-ErrVal getWindowExtent(VkExtent2D *pExtent, GLFWwindow *pWindow) {
+ErrVal getExtentWindow(VkExtent2D *pExtent, GLFWwindow *pWindow) {
   int width;
   int height;
   glfwGetFramebufferSize(pWindow, &width, &height);
