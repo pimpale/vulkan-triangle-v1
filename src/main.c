@@ -181,7 +181,8 @@ int main(void) {
   VkSemaphore pRenderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT];
   new_Semaphores(pRenderFinishedSemaphores, MAX_FRAMES_IN_FLIGHT, device);
   VkFence pInFlightFences[MAX_FRAMES_IN_FLIGHT];
-  new_Fences(pInFlightFences, MAX_FRAMES_IN_FLIGHT, device, true); // fences start off signaled
+  new_Fences(pInFlightFences, MAX_FRAMES_IN_FLIGHT, device,
+             true); // fences start off signaled
 
   // create camera
   vec3 loc = {0.0f, 0.0f, 0.0f};
@@ -202,7 +203,7 @@ int main(void) {
     // available next
     uint32_t imageIndex;
     // this function will return immediately,
-    //  so we use the semaphore to tell us when th eimage is actually available,
+    //  so we use the semaphore to tell us when the image is actually available,
     //  (ready for rendering to)
     ErrVal result =
         getNextSwapchainImage(&imageIndex, swapchain, device,
@@ -263,6 +264,10 @@ int main(void) {
       new_SwapchainFramebuffers(pSwapchainFramebuffers, device, renderPass,
                                 swapchainExtent, swapchainImageCount,
                                 depthImageView, pSwapchainImageViews);
+
+      // finally we can retry getting the swapchain
+      getNextSwapchainImage(&imageIndex, swapchain, device,
+                            pImageAvailableSemaphores[currentFrame]);
     }
 
     // update camera
