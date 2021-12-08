@@ -359,7 +359,7 @@ ErrVal new_Framebuffer(VkFramebuffer *pFramebuffer, const VkDevice device,
 
 void delete_Framebuffer(VkFramebuffer *pFramebuffer, VkDevice device);
 
-ErrVal new_SwapchainFramebuffers(VkFramebuffer **ppFramebuffers,
+ErrVal new_SwapchainFramebuffers(VkFramebuffer *pFramebuffers,
                                  const VkDevice device,
                                  const VkRenderPass renderPass,
                                  const VkExtent2D swapchainExtent,
@@ -367,34 +367,44 @@ ErrVal new_SwapchainFramebuffers(VkFramebuffer **ppFramebuffers,
                                  const VkImageView depthImageView,
                                  const VkImageView *pSwapchainImageViews);
 
-void delete_SwapchainFramebuffers(VkFramebuffer **ppFramebuffers,
+void delete_SwapchainFramebuffers(VkFramebuffer *pFramebuffers,
                                   const uint32_t imageCount,
                                   const VkDevice device);
 
-ErrVal new_CommandPool(VkCommandPool *pCommandPool, const VkDevice device,
-                       const uint32_t queueFamilyIndex);
+ErrVal new_CommandPool(             //
+    VkCommandPool *pCommandPool,    //
+    const VkDevice device,          //
+    const uint32_t queueFamilyIndex //
+);
 
 void delete_CommandPool(VkCommandPool *pCommandPool, const VkDevice device);
 
-ErrVal new_VertexDisplayCommandBuffers(                 //
-    VkCommandBuffer *pCommandBuffers,                   //
-    const uint32_t swapchainFramebufferCount,           //
-    const VkFramebuffer *pSwapchainFramebuffers,        //
+ErrVal new_CommandBuffers(             //
+    VkCommandBuffer *pCommandBuffers,  //
+    const uint32_t commandBufferCount, //
+    const VkCommandPool commandPool,   //
+    const VkDevice device              //
+);
+
+void delete_CommandBuffers(            //
+    VkCommandBuffer *pCommandBuffers,  //
+    const uint32_t commandBufferCount, //
+    const VkCommandPool commandPool,   //
+    const VkDevice device              //
+);
+
+ErrVal recordVertexDisplayCommandBuffer(                //
+    VkCommandBuffer commandBuffer,                      //
+    const VkFramebuffer swapchainFramebuffer,           //
     const VkBuffer vertexBuffer,                        //
     const uint32_t vertexCount,                         //
-    const VkDevice device,                              //
     const VkRenderPass renderPass,                      //
     const VkPipelineLayout vertexDisplayPipelineLayout, //
     const VkPipeline vertexDisplayPipeline,             //
-    const VkCommandPool commandPool,                    //
     const VkExtent2D swapchainExtent,                   //
-    const mat4x4 cameraTransform                        //
+    const mat4x4 cameraTransform,                       //
+    const VkClearColorValue clearColor                  //
 );
-
-void delete_CommandBuffers(VkCommandBuffer **ppCommandBuffers,
-                           const uint32_t commandBufferCount,
-                           const VkCommandPool commandPool,
-                           const VkDevice device);
 
 ErrVal new_Semaphore(VkSemaphore *pSemaphore, const VkDevice device);
 
@@ -406,23 +416,39 @@ ErrVal new_Semaphores(VkSemaphore *pSemaphores, const uint32_t semaphoreCount,
 void delete_Semaphores(VkSemaphore *pSemaphores, const uint32_t semaphoreCount,
                        const VkDevice device);
 
-ErrVal new_Fence(VkFence *pFence, const VkDevice device);
+ErrVal new_Fence(VkFence *pFence, const VkDevice device, const bool signaled);
 
 void delete_Fence(VkFence *pFence, const VkDevice device);
 
-ErrVal new_Fences(VkFence *pFences, const uint32_t fenceCount,
-                  const VkDevice device);
+ErrVal waitAndResetFence(VkFence fence, const VkDevice device);
+
+ErrVal new_Fences(
+    VkFence *pFences, 
+    const uint32_t fenceCount,
+    const VkDevice device,
+    const bool allSignaled
+);
 
 void delete_Fences(VkFence *pFences, const uint32_t fenceCount,
                    const VkDevice device);
 
-ErrVal drawFrame(uint32_t *pCurrentFrame, const uint32_t maxFramesInFlight,
-                 const VkDevice device, const VkSwapchainKHR swapchain,
-                 const VkCommandBuffer *pCommandBuffers,
-                 const VkFence *pInFlightFences,
-                 const VkSemaphore *pImageAvailableSemaphores,
-                 const VkSemaphore *pRenderFinishedSemaphores,
-                 const VkQueue graphicsQueue, const VkQueue presentQueue);
+ErrVal getNextSwapchainImage(           //
+    uint32_t *pImageIndex,              //
+    const VkSwapchainKHR swapchain,     //
+    const VkDevice device,              //
+    VkSemaphore imageAvailableSemaphore //
+);
+
+ErrVal drawFrame(                        //
+    VkCommandBuffer commandBuffer,       //
+    VkSwapchainKHR swapchain,            //
+    const uint32_t swapchainImageIndex,  //
+    VkSemaphore imageAvailableSemaphore, //
+    VkSemaphore renderFinishedSemaphore, //
+    VkFence inFlightFence,               //
+    const VkQueue graphicsQueue,         //
+    const VkQueue presentQueue           //
+);
 
 ErrVal new_SurfaceFromGLFW(VkSurfaceKHR *pSurface, GLFWwindow *pWindow,
                            const VkInstance instance);
@@ -449,15 +475,6 @@ ErrVal copyBuffer(VkBuffer destinationBuffer, const VkBuffer sourceBuffer,
 void delete_Buffer(VkBuffer *pBuffer, const VkDevice device);
 
 void delete_DeviceMemory(VkDeviceMemory *pDeviceMemory, const VkDevice device);
-
-ErrVal new_begin_OneTimeSubmitCommandBuffer(VkCommandBuffer *pCommandBuffer,
-                                            const VkDevice device,
-                                            const VkCommandPool commandPool);
-
-ErrVal delete_end_OneTimeSubmitCommandBuffer(VkCommandBuffer *pCommandBuffer,
-                                             const VkDevice device,
-                                             const VkQueue queue,
-                                             const VkCommandPool commandPool);
 
 ErrVal copyToDeviceMemory(VkDeviceMemory *pDeviceMemory,
                           const VkDeviceSize deviceSize, const void *source,

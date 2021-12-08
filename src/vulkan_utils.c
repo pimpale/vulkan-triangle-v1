@@ -848,41 +848,32 @@ void delete_Framebuffer(VkFramebuffer *pFramebuffer, VkDevice device) {
   *pFramebuffer = VK_NULL_HANDLE;
 }
 
-ErrVal new_SwapchainFramebuffers(VkFramebuffer **ppFramebuffers,
+ErrVal new_SwapchainFramebuffers(VkFramebuffer *pFramebuffers,
                                  const VkDevice device,
                                  const VkRenderPass renderPass,
                                  const VkExtent2D swapchainExtent,
                                  const uint32_t imageCount,
                                  const VkImageView depthImageView,
                                  const VkImageView *pSwapchainImageViews) {
-  *ppFramebuffers = (VkFramebuffer *)malloc(imageCount * sizeof(VkFramebuffer));
-  if (!(*ppFramebuffers)) {
-    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "could not create framebuffers: %s",
-                   strerror(errno));
-    PANIC();
-  }
-
   for (uint32_t i = 0; i < imageCount; i++) {
-    ErrVal retVal = new_Framebuffer(&((*ppFramebuffers)[i]), device, renderPass,
+    ErrVal retVal = new_Framebuffer(&pFramebuffers[i], device, renderPass,
                                     pSwapchainImageViews[i], depthImageView,
                                     swapchainExtent);
     if (retVal != ERR_OK) {
       LOG_ERROR(ERR_LEVEL_ERROR, "could not create framebuffers");
-      delete_SwapchainFramebuffers(ppFramebuffers, i, device);
+      delete_SwapchainFramebuffers(pFramebuffers, i, device);
       return (retVal);
     }
   }
   return (ERR_OK);
 }
 
-void delete_SwapchainFramebuffers(VkFramebuffer **ppFramebuffers,
+void delete_SwapchainFramebuffers(VkFramebuffer *pFramebuffers,
                                   const uint32_t imageCount,
                                   const VkDevice device) {
   for (uint32_t i = 0; i < imageCount; i++) {
-    delete_Framebuffer(&((*ppFramebuffers)[i]), device);
+    delete_Framebuffer(&pFramebuffers[i], device);
   }
-  free(*ppFramebuffers);
-  *ppFramebuffers = NULL;
 }
 
 ErrVal new_CommandPool(VkCommandPool *pCommandPool, const VkDevice device,
@@ -890,7 +881,7 @@ ErrVal new_CommandPool(VkCommandPool *pCommandPool, const VkDevice device,
   VkCommandPoolCreateInfo poolInfo = {0};
   poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   poolInfo.queueFamilyIndex = queueFamilyIndex;
-  poolInfo.flags = 0;
+  poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
   VkResult ret = vkCreateCommandPool(device, &poolInfo, NULL, pCommandPool);
   if (ret != VK_SUCCESS) {
     LOG_ERROR_ARGS(ERR_LEVEL_ERROR, "failed to create command pool %s",
@@ -904,101 +895,69 @@ void delete_CommandPool(VkCommandPool *pCommandPool, const VkDevice device) {
   vkDestroyCommandPool(device, *pCommandPool, NULL);
 }
 
-ErrVal new_VertexDisplayCommandBuffers(                 //
-    VkCommandBuffer *pCommandBuffers,                   //
-    const uint32_t swapchainFramebufferCount,           //
-    const VkFramebuffer *pSwapchainFramebuffers,        //
+ErrVal recordVertexDisplayCommandBuffer(                //
+    VkCommandBuffer commandBuffer,                      //
+    const VkFramebuffer swapchainFramebuffer,           //
     const VkBuffer vertexBuffer,                        //
     const uint32_t vertexCount,                         //
-    const VkDevice device,                              //
     const VkRenderPass renderPass,                      //
     const VkPipelineLayout vertexDisplayPipelineLayout, //
     const VkPipeline vertexDisplayPipeline,             //
-    const VkCommandPool commandPool,                    //
     const VkExtent2D swapchainExtent,                   //
-    const mat4x4 cameraTransform                        //
+    const mat4x4 cameraTransform,                       //
+    const VkClearColorValue clearColor                  //
 ) {
-  VkCommandBufferAllocateInfo allocInfo = {0};
-  allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-  allocInfo.commandPool = commandPool;
-  allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-  allocInfo.commandBufferCount = swapchainFramebufferCount;
+  VkCommandBufferBeginInfo beginInfo = {0};
+  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-  VkResult allocateCommandBuffersRetVal =
-      vkAllocateCommandBuffers(device, &allocInfo, pCommandBuffers);
-  if (allocateCommandBuffersRetVal != VK_SUCCESS) {
+  VkResult beginRet = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+  if (beginRet != VK_SUCCESS) {
     LOG_ERROR_ARGS(ERR_LEVEL_FATAL,
-                   "Failed to create graphics command buffers, error code: %s",
-                   vkstrerror(allocateCommandBuffersRetVal));
+                   "failed to record into graphics command buffer: %s",
+                   vkstrerror(beginRet));
     PANIC();
   }
 
-  for (size_t i = 0; i < swapchainFramebufferCount; i++) {
-    VkCommandBufferBeginInfo beginInfo = {0};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+  VkRenderPassBeginInfo renderPassInfo = {0};
+  renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+  renderPassInfo.renderPass = renderPass;
+  renderPassInfo.framebuffer = swapchainFramebuffer;
+  renderPassInfo.renderArea.offset = (VkOffset2D){0, 0};
+  renderPassInfo.renderArea.extent = swapchainExtent;
 
-    if (vkBeginCommandBuffer(pCommandBuffers[i], &beginInfo) != VK_SUCCESS) {
-      LOG_ERROR(ERR_LEVEL_FATAL,
-                "Failed to record into graphics command buffer");
-      PANIC();
-    }
+  VkClearValue pClearColors[2];
+  pClearColors[0].color = clearColor;
+  pClearColors[1].depthStencil.depth = 1.0f;
+  pClearColors[1].depthStencil.stencil = 0;
 
-    VkRenderPassBeginInfo renderPassInfo = {0};
-    renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-    renderPassInfo.renderPass = renderPass;
-    renderPassInfo.framebuffer = pSwapchainFramebuffers[i];
-    renderPassInfo.renderArea.offset = (VkOffset2D){0, 0};
-    renderPassInfo.renderArea.extent = swapchainExtent;
+  renderPassInfo.clearValueCount = 2;
+  renderPassInfo.pClearValues = pClearColors;
 
-    VkClearValue pClearColors[2];
-    pClearColors[0].color.float32[0] = 0.0f;
-    pClearColors[0].color.float32[1] = 0.0f;
-    pClearColors[0].color.float32[2] = 0.0f;
-    pClearColors[0].color.float32[3] = 0.0f;
+  vkCmdBeginRenderPass(commandBuffer, &renderPassInfo,
+                       VK_SUBPASS_CONTENTS_INLINE);
+  vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                    vertexDisplayPipeline);
+  vkCmdPushConstants(commandBuffer, vertexDisplayPipelineLayout,
+                     VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4x4),
+                     cameraTransform);
 
-    pClearColors[1].depthStencil.depth = 1.0f;
-    pClearColors[1].depthStencil.stencil = 0;
+  VkBuffer vertexBuffers[] = {vertexBuffer};
+  VkDeviceSize offsets[] = {0};
+  vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-    renderPassInfo.clearValueCount = 2;
-    renderPassInfo.pClearValues = pClearColors;
+  vkCmdDraw(commandBuffer, vertexCount, 1, 0, 0);
+  vkCmdEndRenderPass(commandBuffer);
 
-    vkCmdBeginRenderPass(pCommandBuffers[i], &renderPassInfo,
-                         VK_SUBPASS_CONTENTS_INLINE);
-
-    vkCmdBindPipeline(pCommandBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                      vertexDisplayPipeline);
-
-    vkCmdPushConstants(pCommandBuffers[i], vertexDisplayPipelineLayout,
-                       VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(mat4x4),
-                       cameraTransform);
-    VkBuffer vertexBuffers[] = {vertexBuffer};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(pCommandBuffers[i], 0, 1, vertexBuffers, offsets);
-
-    vkCmdDraw(pCommandBuffers[i], vertexCount, 1, 0, 0);
-    vkCmdEndRenderPass(pCommandBuffers[i]);
-
-    VkResult endCommandBufferRetVal = vkEndCommandBuffer(pCommandBuffers[i]);
-    if (endCommandBufferRetVal != VK_SUCCESS) {
-      LOG_ERROR_ARGS(ERR_LEVEL_FATAL,
-                     "Failed to record command buffer, error code: %s",
-                     vkstrerror(endCommandBufferRetVal));
-      PANIC();
-    }
+  VkResult endCommandBufferRetVal = vkEndCommandBuffer(commandBuffer);
+  if (endCommandBufferRetVal != VK_SUCCESS) {
+    LOG_ERROR_ARGS(ERR_LEVEL_FATAL,
+                   "Failed to record command buffer, error code: %s",
+                   vkstrerror(endCommandBufferRetVal));
+    PANIC();
   }
-
   return (ERR_OK);
-}
-
-void delete_CommandBuffers(VkCommandBuffer **ppCommandBuffers,
-                           const uint32_t commandBufferCount,
-                           const VkCommandPool commandPool,
-                           const VkDevice device) {
-  vkFreeCommandBuffers(device, commandPool, commandBufferCount,
-                       *ppCommandBuffers);
-  free(*ppCommandBuffers);
-  *ppCommandBuffers = NULL;
 }
 
 ErrVal new_Semaphore(VkSemaphore *pSemaphore, const VkDevice device) {
@@ -1037,15 +996,18 @@ void delete_Semaphores(VkSemaphore *pSemaphores, const uint32_t semaphoreCount,
   }
 }
 
-ErrVal new_Fence(VkFence *pFence, const VkDevice device) {
+// Note we're creating the fence already signaled!
+ErrVal new_Fence(VkFence *pFence, const VkDevice device, const bool signaled) {
   VkFenceCreateInfo fenceInfo = {0};
   fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-  fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+  if (signaled) {
+    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+  }
   VkResult ret = vkCreateFence(device, &fenceInfo, NULL, pFence);
   if (ret != VK_SUCCESS) {
-    LOG_ERROR_ARGS(ERR_LEVEL_ERROR, "failed to create fence: %s",
+    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to create fence: %s",
                    vkstrerror(ret));
-    return (ERR_UNKNOWN);
+    PANIC();
   }
   return (ERR_OK);
 }
@@ -1055,10 +1017,14 @@ void delete_Fence(VkFence *pFence, const VkDevice device) {
   *pFence = VK_NULL_HANDLE;
 }
 
-ErrVal new_Fences(VkFence *pFences, const uint32_t fenceCount,
-                  const VkDevice device) {
+ErrVal new_Fences( //
+    VkFence *pFences,  //
+    const uint32_t fenceCount, //
+    const VkDevice device, //
+    const bool allSignaled //
+) {
   for (uint32_t i = 0; i < fenceCount; i++) {
-    ErrVal retVal = new_Fence(&pFences[i], device);
+    ErrVal retVal = new_Fence(&pFences[i], device, allSignaled);
     if (retVal != ERR_OK) {
       /* Clean up memory */
       delete_Fences(pFences, i, device);
@@ -1075,39 +1041,39 @@ void delete_Fences(VkFence *pFences, const uint32_t fenceCount,
   }
 }
 
-/* Draws a frame to the surface provided, and sets things up for the next frame
- */
-uint32_t drawFrame(uint32_t *pCurrentFrame, const uint32_t maxFramesInFlight,
-                   const VkDevice device, const VkSwapchainKHR swapchain,
-                   const VkCommandBuffer *pCommandBuffers,
-                   const VkFence *pInFlightFences,
-                   const VkSemaphore *pImageAvailableSemaphores,
-                   const VkSemaphore *pRenderFinishedSemaphores,
-                   const VkQueue graphicsQueue, const VkQueue presentQueue) {
-  /* Waits for the the current frame to finish processing */
-  VkResult fenceWait = vkWaitForFences(
-      device, 1, &pInFlightFences[*pCurrentFrame], VK_TRUE, UINT64_MAX);
-  if (fenceWait != VK_SUCCESS) {
-    LOG_ERROR_ARGS(ERR_LEVEL_FATAL,
-                   "failed to wait for fence while drawing frame: %s",
-                   vkstrerror(fenceWait));
+ErrVal waitAndResetFence(VkFence fence, const VkDevice device) {
+  // Wait for the current frame to finish processing
+  VkResult waitRet = vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+  if (waitRet != VK_SUCCESS) {
+    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to wait for fence: %s",
+                   vkstrerror(waitRet));
     PANIC();
   }
-  VkResult fenceResetResult =
-      vkResetFences(device, 1, &pInFlightFences[*pCurrentFrame]);
-  if (fenceResetResult != VK_SUCCESS) {
-    LOG_ERROR_ARGS(ERR_LEVEL_FATAL,
-                   "failed to reset fence while drawing frame: %s",
-                   vkstrerror(fenceResetResult));
+
+  // reset the fence
+  VkResult resetRet = vkResetFences(device, 1, &fence);
+  if (resetRet != VK_SUCCESS) {
+    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to reset fence: %s",
+                   vkstrerror(resetRet));
+    PANIC();
   }
-  /* Gets the next image from the swap Chain */
-  uint32_t imageIndex;
+
+  return (ERR_OK);
+}
+
+ErrVal getNextSwapchainImage(           //
+    uint32_t *pImageIndex,              //
+    const VkSwapchainKHR swapchain,     //
+    const VkDevice device,              //
+    VkSemaphore imageAvailableSemaphore //
+) {
+  // get the next image from the swapchain
   VkResult nextImageResult = vkAcquireNextImageKHR(
-      device, swapchain, UINT64_MAX, pImageAvailableSemaphores[*pCurrentFrame],
-      VK_NULL_HANDLE, &imageIndex);
-  /* If the window has been resized, the result will be an out of date error,
-   * meaning that the swap chain must be resized */
+      device, swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE,
+      pImageIndex);
   if (nextImageResult == VK_ERROR_OUT_OF_DATE_KHR) {
+    // If the window has been resized, the result will be an out of date error,
+    // meaning that the swap chain must be resized
     return (ERR_OUTOFDATE);
   } else if (nextImageResult != VK_SUCCESS) {
     LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to get next frame: %s",
@@ -1115,53 +1081,58 @@ uint32_t drawFrame(uint32_t *pCurrentFrame, const uint32_t maxFramesInFlight,
     PANIC();
   }
 
-  VkSubmitInfo submitInfo = {0};
-  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  return (ERR_OK);
+}
 
-  /* Sets up for next frame */
-  VkSemaphore waitSemaphores[] = {pImageAvailableSemaphores[*pCurrentFrame]};
+// Draws a frame to the surface provided, and sets things up for the next frame
+ErrVal drawFrame(                        //
+    VkCommandBuffer commandBuffer,       //
+    VkSwapchainKHR swapchain,            //
+    const uint32_t swapchainImageIndex,  //
+    VkSemaphore imageAvailableSemaphore, //
+    VkSemaphore renderFinishedSemaphore, //
+    VkFence inFlightFence,               //
+    const VkQueue graphicsQueue,         //
+    const VkQueue presentQueue           //
+) {
+
+  // Sets up for next frame
   VkPipelineStageFlags waitStages[] = {
       VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+
+  VkSubmitInfo submitInfo = {0};
+  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
   submitInfo.waitSemaphoreCount = 1;
-  submitInfo.pWaitSemaphores = waitSemaphores;
+  submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
   submitInfo.pWaitDstStageMask = waitStages;
-  /*TODO please push constants here, rather than re record each time*/
   submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = &pCommandBuffers[imageIndex];
+  submitInfo.pCommandBuffers = &commandBuffer;
 
-  VkSemaphore signalSemaphores[] = {pRenderFinishedSemaphores[*pCurrentFrame]};
   submitInfo.signalSemaphoreCount = 1;
-  submitInfo.pSignalSemaphores = signalSemaphores;
+  submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
-  VkResult queueSubmitResult = vkQueueSubmit(graphicsQueue, 1, &submitInfo,
-                                             pInFlightFences[*pCurrentFrame]);
+  VkResult queueSubmitResult =
+      vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFence);
   if (queueSubmitResult != VK_SUCCESS) {
     LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to submit queue: %s",
                    vkstrerror(queueSubmitResult));
     PANIC();
   }
 
-  /* Present frame to screen */
+  // Present frame to screen
   VkPresentInfoKHR presentInfo = {0};
   presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
   presentInfo.waitSemaphoreCount = 1;
-  presentInfo.pWaitSemaphores = signalSemaphores;
-
-  VkSwapchainKHR swapchains[] = {swapchain};
+  presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
   presentInfo.swapchainCount = 1;
-  presentInfo.pSwapchains = swapchains;
-
-  presentInfo.pImageIndices = &imageIndex;
-
+  presentInfo.pSwapchains = &swapchain;
+  presentInfo.pImageIndices = &swapchainImageIndex;
   vkQueuePresentKHR(presentQueue, &presentInfo);
-  /* Increments the current frame by one */ /* TODO come up with more graceful
-                                               solution */
-  *pCurrentFrame = (*pCurrentFrame + 1) % maxFramesInFlight;
+
   return (ERR_OK);
 }
 
-/* Deletes a VkSurfaceKHR */
+// Deletes a VkSurfaceKHR
 void delete_Surface(VkSurfaceKHR *pSurface, const VkInstance instance) {
   vkDestroySurfaceKHR(instance, *pSurface, NULL);
   *pSurface = VK_NULL_HANDLE;
@@ -1334,32 +1305,68 @@ ErrVal new_Buffer_DeviceMemory(VkBuffer *pBuffer, VkDeviceMemory *pBufferMemory,
   return (ERR_OK);
 }
 
+// submits a copy to the queue, you'll later need to wait for idle
 ErrVal copyBuffer(VkBuffer destinationBuffer, const VkBuffer sourceBuffer,
                   const VkDeviceSize size, const VkCommandPool commandPool,
                   const VkQueue queue, const VkDevice device) {
   VkCommandBuffer copyCommandBuffer;
-  ErrVal beginResult = new_begin_OneTimeSubmitCommandBuffer(
-      &copyCommandBuffer, device, commandPool);
-
-  if (beginResult != ERR_OK) {
-    LOG_ERROR(ERR_LEVEL_ERROR, "failed to begin command buffer");
-    return (beginResult);
+  ErrVal createResult =
+      new_CommandBuffers(&copyCommandBuffer, 1, commandPool, device);
+  if (createResult != ERR_OK) {
   }
 
-  VkBufferCopy copyRegion = {0};
-  copyRegion.size = size;
-  copyRegion.srcOffset = 0;
-  copyRegion.dstOffset = 0;
+  VkCommandBufferBeginInfo beginInfo = {0};
+  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+
+  VkResult beginRet = vkBeginCommandBuffer(copyCommandBuffer, &beginInfo);
+  if (beginRet != VK_SUCCESS) {
+    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "Failed to begin copy command buffer: %s",
+                   vkstrerror(beginRet));
+    PANIC();
+  }
+
+  VkBufferCopy copyRegion = {.size = size, .srcOffset = 0, .dstOffset = 0};
   vkCmdCopyBuffer(copyCommandBuffer, sourceBuffer, destinationBuffer, 1,
                   &copyRegion);
 
-  ErrVal endResult = delete_end_OneTimeSubmitCommandBuffer(
-      &copyCommandBuffer, device, queue, commandPool);
-
-  if (endResult != ERR_OK) {
-    LOG_ERROR(ERR_LEVEL_ERROR, "failed to end command buffer");
-    return (endResult);
+  // End buffer
+  VkResult bufferEndResult = vkEndCommandBuffer(copyCommandBuffer);
+  if (bufferEndResult != VK_SUCCESS) {
+    /* Clean up resources */
+    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to end command buffer: %s",
+                   vkstrerror(bufferEndResult));
+    PANIC();
   }
+
+  // wait for completion with a fence
+  VkFence fence;
+  if (new_Fence(&fence, device, false) != ERR_OK) {
+    LOG_ERROR(ERR_LEVEL_FATAL, "Failed to make copy fence");
+    PANIC();
+  }
+
+  VkSubmitInfo submitInfo = {0};
+  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers = &copyCommandBuffer;
+
+  VkResult queueSubmitResult = vkQueueSubmit(queue, 1, &submitInfo, fence);
+  if (queueSubmitResult != VK_SUCCESS) {
+    LOG_ERROR_ARGS(ERR_LEVEL_FATAL,
+                   "failed to submit command buffer to queue: %s",
+                   vkstrerror(queueSubmitResult));
+    PANIC();
+  }
+
+  VkResult waitRet = vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
+  if (waitRet != VK_SUCCESS) {
+    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to wait for fence: %s",
+                   vkstrerror(waitRet));
+    PANIC();
+  }
+
+  delete_Fence(&fence, device);
 
   return (ERR_OK);
 }
@@ -1374,80 +1381,41 @@ void delete_DeviceMemory(VkDeviceMemory *pDeviceMemory, const VkDevice device) {
   *pDeviceMemory = VK_NULL_HANDLE;
 }
 
-/*
- * Allocates, creates and begins one command buffer to be used.
- * Must be ended with delete_end_OneTimeSubmitCommandBuffer
- */
-ErrVal new_begin_OneTimeSubmitCommandBuffer(VkCommandBuffer *pCommandBuffer,
-                                            const VkDevice device,
-                                            const VkCommandPool commandPool) {
+// creates a command buffer that hasn't yet been begun
+ErrVal new_CommandBuffers(             //
+    VkCommandBuffer *pCommandBuffer,   //
+    const uint32_t commandBufferCount, //
+    const VkCommandPool commandPool,   //
+    const VkDevice device              //
+) {
   VkCommandBufferAllocateInfo allocateInfo = {0};
   allocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
   allocateInfo.commandPool = commandPool;
-  allocateInfo.commandBufferCount = 1;
+  allocateInfo.commandBufferCount = commandBufferCount;
 
   VkResult allocateResult =
       vkAllocateCommandBuffers(device, &allocateInfo, pCommandBuffer);
   if (allocateResult != VK_SUCCESS) {
-    LOG_ERROR_ARGS(ERR_LEVEL_ERROR, "failed to allocate command buffers: %s",
+    LOG_ERROR_ARGS(ERR_LEVEL_FATAL, "failed to allocate command buffers: %s",
                    vkstrerror(allocateResult));
-    return (ERR_MEMORY);
-  }
-
-  VkCommandBufferBeginInfo beginInfo = {0};
-  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-  VkResult res = vkBeginCommandBuffer(*pCommandBuffer, &beginInfo);
-  if (res != VK_SUCCESS) {
-    LOG_ERROR_ARGS(ERR_LEVEL_ERROR, "failed to create command buffer: %s",
-                   vkstrerror(res));
-    return (ERR_UNKNOWN);
+    PANIC();
   }
 
   return (ERR_OK);
 }
 
-/*
- * Ends, submits, and deletes one command buffer that was previously created in
- * new_begin_OneTimeSubmitCommandBuffer
- */
-ErrVal delete_end_OneTimeSubmitCommandBuffer(VkCommandBuffer *pCommandBuffer,
-                                             const VkDevice device,
-                                             const VkQueue queue,
-                                             const VkCommandPool commandPool) {
-  ErrVal retVal = ERR_OK;
-  VkResult bufferEndResult = vkEndCommandBuffer(*pCommandBuffer);
-  if (bufferEndResult != VK_SUCCESS) {
-    /* Clean up resources */
-    LOG_ERROR_ARGS(ERR_LEVEL_ERROR,
-                   "failed to end one time submit command buffer: %s",
-                   vkstrerror(bufferEndResult));
-    retVal = ERR_UNKNOWN;
-    goto FREEALL;
+void delete_CommandBuffers(            //
+    VkCommandBuffer *pCommandBuffers,  //
+    const uint32_t commandBufferCount, //
+    const VkCommandPool commandPool,   //
+    const VkDevice device              //
+) {
+  vkFreeCommandBuffers(device, commandPool, commandBufferCount,
+                       pCommandBuffers);
+  for (uint32_t i = 0; i < commandBufferCount; i++) {
+    pCommandBuffers[i] = VK_NULL_HANDLE;
   }
-
-  VkSubmitInfo submitInfo = {0};
-  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submitInfo.commandBufferCount = 1;
-  submitInfo.pCommandBuffers = pCommandBuffer;
-
-  VkResult queueSubmitResult =
-      vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
-  if (queueSubmitResult != VK_SUCCESS) {
-    LOG_ERROR_ARGS(
-        ERR_LEVEL_ERROR,
-        "failed to submit one time submit command buffer to queue: %s",
-        vkstrerror(queueSubmitResult));
-    retVal = ERR_UNKNOWN;
-    goto FREEALL;
-  }
-/* Deallocate the buffer */
-FREEALL:
-  vkQueueWaitIdle(queue);
-  vkFreeCommandBuffers(device, commandPool, 1, pCommandBuffer);
-  *pCommandBuffer = VK_NULL_HANDLE;
-  return (retVal);
 }
 
 ErrVal copyToDeviceMemory(VkDeviceMemory *pDeviceMemory,

@@ -14,15 +14,14 @@
 #include "utils.h"
 #include "vulkan_utils.h"
 
-
 #include "errors.h"
-
 
 #define WINDOW_HEIGHT 500
 #define WINDOW_WIDTH 500
+#define MAX_FRAMES_IN_FLIGHT 2
 
-static uint32_t vertex_count = 6;
-static Vertex vertex_data[] = {
+static uint32_t vertexCount = 6;
+static Vertex vertexData[] = {
     (Vertex){.position = {1.0, 0.0, 0.0}, .color = {1.0, 0.0, 0.0}},
     (Vertex){.position = {0.0, 1.0, 0.0}, .color = {0.0, 1.0, 0.0}},
     (Vertex){.position = {0.0, 0.0, 1.0}, .color = {0.0, 0.0, 1.0}},
@@ -162,72 +161,60 @@ int main(void) {
                             fragShaderModule, swapchainExtent, renderPass,
                             graphicsPipelineLayout);
 
-  VkFramebuffer *pSwapchainFramebuffers;
-  new_SwapchainFramebuffers(&pSwapchainFramebuffers, device, renderPass,
+  VkFramebuffer *pSwapchainFramebuffers =
+      malloc(swapchainImageCount * sizeof(VkFramebuffer));
+  new_SwapchainFramebuffers(pSwapchainFramebuffers, device, renderPass,
                             swapchainExtent, swapchainImageCount,
                             depthImageView, pSwapchainImageViews);
 
-  VkSemaphore *pImageAvailableSemaphores =
-      malloc(swapchainImageCount * sizeof(VkSemaphore));
-  VkSemaphore *pRenderFinishedSemaphores =
-      malloc(swapchainImageCount * sizeof(VkSemaphore));
-  VkFence *pInFlightFences = malloc(swapchainImageCount * sizeof(VkFence));
-  new_Semaphores(pImageAvailableSemaphores, swapchainImageCount, device);
-  new_Semaphores(pRenderFinishedSemaphores, swapchainImageCount, device);
-  new_Fences(pInFlightFences, swapchainImageCount, device);
-
   VkBuffer vertexBuffer;
   VkDeviceMemory vertexBufferMemory;
-  new_VertexBuffer(&vertexBuffer, &vertexBufferMemory, vertex_data,
-                   vertex_count, device, physicalDevice, commandPool,
-                   graphicsQueue);
+  new_VertexBuffer(&vertexBuffer, &vertexBufferMemory, vertexData, vertexCount,
+                   device, physicalDevice, commandPool, graphicsQueue);
+
+  VkCommandBuffer pVertexDisplayCommandBuffers[MAX_FRAMES_IN_FLIGHT];
+  new_CommandBuffers(pVertexDisplayCommandBuffers, 2, commandPool, device);
+
+  // Create image synchronization primitives
+  VkSemaphore pImageAvailableSemaphores[MAX_FRAMES_IN_FLIGHT];
+  new_Semaphores(pImageAvailableSemaphores, MAX_FRAMES_IN_FLIGHT, device);
+  VkSemaphore pRenderFinishedSemaphores[MAX_FRAMES_IN_FLIGHT];
+  new_Semaphores(pRenderFinishedSemaphores, MAX_FRAMES_IN_FLIGHT, device);
+  VkFence pInFlightFences[MAX_FRAMES_IN_FLIGHT];
+  new_Fences(pInFlightFences, MAX_FRAMES_IN_FLIGHT, device, true); // fences start off signaled
 
   // create camera
   vec3 loc = {0.0f, 0.0f, 0.0f};
   Camera camera = new_Camera(loc, swapchainExtent);
 
+  // this number counts which frame we're on
+  // up to MAX_FRAMES_IN_FLIGHT, at whcich points it resets to 0
   uint32_t currentFrame = 0;
 
   /*wait till close*/
   while (!glfwWindowShouldClose(pWindow)) {
-    // poll events and update camera
     glfwPollEvents();
-    updateCamera(&camera, pWindow);
 
-    mat4x4 mvp;
-    getMvpCamera(mvp, &camera);
+    // wait for last frame to finish
+    waitAndResetFence(pInFlightFences[currentFrame], device);
 
-    VkCommandBuffer *pVertexDisplayCommandBuffers =
-        malloc(swapchainImageCount * sizeof(VkCommandBuffer));
+    // the imageIndex is the index of the swapchain framebuffer that is
+    // available next
+    uint32_t imageIndex;
+    // this function will return immediately,
+    //  so we use the semaphore to tell us when th eimage is actually available,
+    //  (ready for rendering to)
+    ErrVal result =
+        getNextSwapchainImage(&imageIndex, swapchain, device,
+                              pImageAvailableSemaphores[currentFrame]);
 
-    new_VertexDisplayCommandBuffers(
-        pVertexDisplayCommandBuffers, swapchainImageCount,
-        pSwapchainFramebuffers, vertexBuffer, vertex_count, device, renderPass,
-        graphicsPipelineLayout, graphicsPipeline, commandPool, swapchainExtent,
-        mvp);
-
-    uint32_t result = drawFrame(
-        &currentFrame, 2, device, swapchain, pVertexDisplayCommandBuffers,
-        pInFlightFences, pImageAvailableSemaphores, pRenderFinishedSemaphores,
-        graphicsQueue, presentQueue);
-
-    // delete_CommandBuffers(&pVertexDisplayCommandBuffers,swapchainImageCount,
-    // commandPool, device);
-    free(pVertexDisplayCommandBuffers);
-
+    // if the window is resized
     if (result == ERR_OUTOFDATE) {
       vkDeviceWaitIdle(device);
-      delete_Fences(pInFlightFences, swapchainImageCount, device);
-      delete_Semaphores(pRenderFinishedSemaphores, swapchainImageCount, device);
-      delete_Semaphores(pImageAvailableSemaphores, swapchainImageCount, device);
 
-      free(pInFlightFences);
-      free(pRenderFinishedSemaphores);
-      free(pImageAvailableSemaphores);
-
-      delete_CommandPool(&commandPool, device);
-      delete_SwapchainFramebuffers(&pSwapchainFramebuffers, swapchainImageCount,
+      delete_SwapchainFramebuffers(pSwapchainFramebuffers, swapchainImageCount,
                                    device);
+      free(pSwapchainFramebuffers);
       delete_Pipeline(&graphicsPipeline, device);
       delete_PipelineLayout(&graphicsPipelineLayout, device);
       delete_RenderPass(&renderPass, device);
@@ -271,35 +258,63 @@ int main(void) {
       new_VertexDisplayPipeline(&graphicsPipeline, device, vertShaderModule,
                                 fragShaderModule, swapchainExtent, renderPass,
                                 graphicsPipelineLayout);
-      new_SwapchainFramebuffers(&pSwapchainFramebuffers, device, renderPass,
+      pSwapchainFramebuffers =
+          malloc(swapchainImageCount * sizeof(VkFramebuffer));
+      new_SwapchainFramebuffers(pSwapchainFramebuffers, device, renderPass,
                                 swapchainExtent, swapchainImageCount,
                                 depthImageView, pSwapchainImageViews);
-      new_CommandPool(&commandPool, device, graphicsIndex);
-
-      pImageAvailableSemaphores =
-          malloc(swapchainImageCount * sizeof(VkSemaphore));
-      pRenderFinishedSemaphores =
-          malloc(swapchainImageCount * sizeof(VkSemaphore));
-      pInFlightFences = malloc(swapchainImageCount * sizeof(VkFence));
-      new_Semaphores(pImageAvailableSemaphores, swapchainImageCount, device);
-      new_Semaphores(pRenderFinishedSemaphores, swapchainImageCount, device);
-      new_Fences(pInFlightFences, swapchainImageCount, device);
     }
+
+    // update camera
+    updateCamera(&camera, pWindow);
+    mat4x4 mvp;
+    getMvpCamera(mvp, &camera);
+
+    // record buffer
+    recordVertexDisplayCommandBuffer(                //
+        pVertexDisplayCommandBuffers[currentFrame],  //
+        pSwapchainFramebuffers[imageIndex],          //
+        vertexBuffer,                                //
+        vertexCount,                                 //
+        renderPass,                                  //
+        graphicsPipelineLayout,                      //
+        graphicsPipeline,                            //
+        swapchainExtent,                             //
+        mvp,                                         //
+        (VkClearColorValue){.float32 = {0, 0, 0, 0}} //
+    );
+
+    drawFrame(                                      //
+        pVertexDisplayCommandBuffers[currentFrame], //
+        swapchain,                                  //
+        imageIndex,                                 //
+        pImageAvailableSemaphores[currentFrame],    //
+        pRenderFinishedSemaphores[currentFrame],    //
+        pInFlightFences[currentFrame],              //
+        graphicsQueue,                              //
+        presentQueue                                //
+    );
+
+    // increment frame
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
   }
 
   /*cleanup*/
   vkDeviceWaitIdle(device);
   delete_ShaderModule(&fragShaderModule, device);
   delete_ShaderModule(&vertShaderModule, device);
-  delete_Fences(pInFlightFences, swapchainImageCount, device);
-  delete_Semaphores(pRenderFinishedSemaphores, swapchainImageCount, device);
-  delete_Semaphores(pImageAvailableSemaphores, swapchainImageCount, device);
-  free(pInFlightFences);
-  free(pRenderFinishedSemaphores);
-  free(pImageAvailableSemaphores);
+
+  delete_Fences(pInFlightFences, MAX_FRAMES_IN_FLIGHT, device);
+  delete_Semaphores(pRenderFinishedSemaphores, MAX_FRAMES_IN_FLIGHT, device);
+  delete_Semaphores(pImageAvailableSemaphores, MAX_FRAMES_IN_FLIGHT, device);
+
+  delete_CommandBuffers(pVertexDisplayCommandBuffers, MAX_FRAMES_IN_FLIGHT,
+                        commandPool, device);
   delete_CommandPool(&commandPool, device);
-  delete_SwapchainFramebuffers(&pSwapchainFramebuffers, swapchainImageCount,
+
+  delete_SwapchainFramebuffers(pSwapchainFramebuffers, swapchainImageCount,
                                device);
+  free(pSwapchainFramebuffers);
   delete_Pipeline(&graphicsPipeline, device);
   delete_PipelineLayout(&graphicsPipelineLayout, device);
   delete_Buffer(&vertexBuffer, device);
