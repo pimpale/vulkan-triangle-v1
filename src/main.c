@@ -173,7 +173,7 @@ int main(void) {
                    device, physicalDevice, commandPool, graphicsQueue);
 
   VkCommandBuffer pVertexDisplayCommandBuffers[MAX_FRAMES_IN_FLIGHT];
-  new_CommandBuffers(pVertexDisplayCommandBuffers, 2, commandPool, device);
+  new_CommandBuffers(pVertexDisplayCommandBuffers, MAX_FRAMES_IN_FLIGHT, commandPool, device);
 
   // Create image synchronization primitives
   VkSemaphore pImageAvailableSemaphores[MAX_FRAMES_IN_FLIGHT];

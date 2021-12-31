@@ -1,8 +1,11 @@
 # Vulkan Triangle
 
-This was my first attempt at using the Vulkan API in C to draw a triangle. 
+![Triangle Screenshot](./screenshots/1.png)
 
-I have created a coherent set of utility functions to create and destroy Vulkan resources that may be found in `vulkan_helper.c`.
+Draws a triangle using the Vulkan API.
+You can move the camera using the WASD keys to move, and the arrow keys to rotate.
+
+There are utility functions to create and destroy Vulkan resources that may be found in `vulkan_helper.c`.
 
 This software is released into the public domain and you can use it however you like.
 
